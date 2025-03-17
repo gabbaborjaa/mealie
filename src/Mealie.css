@@ -1,0 +1,34 @@
+.calendar-table {
+    background-color: #f8f9fa; /* Light gray background */
+    border-radius: 8px; /* Rounded corners */
+    overflow: hidden; /* Prevent content overflow */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.calendar-table th {
+    background-color: #343a40; /* Dark header background */
+    color: white; /* White text for headers */
+    padding: 10px;
+    font-size: 1.1rem;
+}
+
+.calendar-table td {
+    padding: 15px;
+    vertical-align: middle; /* Center content vertically */
+    font-size: 0.9rem;
+}
+
+.calendar-table td.no-meal {
+    color: #6c757d; /* Muted text for empty meals */
+    font-style: italic;
+}
+
+.calendar-table td .btn {
+    font-size: 0.8rem; /* Smaller buttons */
+    padding: 5px 10px;
+}
+
+.btn .btn-primary .mt-4 {
+    margin-bottom: 20px;
+    justify-content: center;
+}
