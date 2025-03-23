@@ -86,17 +86,19 @@ const Mealie = () => {
     };
 
     const currentDay = new Date().toLocaleString("en-US", { weekday: "long" });
-
+    // Main App Container UI
     return (
         <div className="container mt-5">
             <h1 className="text-center mb-4">Mealie</h1>
             {/* <button type="submit" className="btn btn-primary">Add Meal</button> */}
+            <div class="button-container">
             <button
                 className="btn btn-primary mt-4"
                 onClick={() => setShowModal(true)}
             >
                 Add Meal
             </button>
+             </div>
             {/* Calendar View */}
             <div className="table-responsive">
                 <table className="table table-bordered table-hover text-center">
@@ -109,6 +111,17 @@ const Mealie = () => {
                             <th>Actions</th>
                         </tr>
                     </thead>
+
+                    <thead> 
+                        <tr>
+                        <th> Monday </th>
+                        <th> Tuesday </th>
+                        <th> Wednesday </th>
+                        <th> Thursday </th>
+                        <th> Friday </th>
+                        </tr>
+                        
+                    </thead> 
                     <tbody>
                         {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
                             const isToday = day === currentDay;
