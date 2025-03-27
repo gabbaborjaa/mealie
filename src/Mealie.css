@@ -3,6 +3,7 @@
     border-radius: 8px; /* Rounded corners */
     overflow: hidden; /* Prevent content overflow */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    
 }
 
 .calendar-table th {
@@ -28,13 +29,50 @@
     padding: 5px 10px;
 }
 
-.btn .btn-primary .mt-4 {
+/* .btn .btn-primary .mt-4 {
     margin-bottom: 20px;
     justify-content: center;
-}
+} */
 .button-container {
-    display: flex; /* Enable flexbox */
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
     margin-bottom: 2rem;
+}
+
+.main-container {
+    margin: 5vw;
+}
+
+/* Button Styling */
+.delete {
+    margin: 5px;
+    background-color: #dc3545; /* Bootstrap danger red */
+    color: white; /* White text */
+    border: none; /* Remove border */
+    padding: 10px 15px; /* Add padding */
+    border-radius: 5px; /* Rounded corners */
+    font-size: 0.9rem; /* Adjust font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.delete:hover {
+    background-color: #c82333; /* Darker red on hover */
+}
+
+.update {
+    margin: 5px;
+    background-color: #ffc107; /* Bootstrap warning yellow */
+    color: black; /* Black text */
+    border: none; /* Remove border */
+    padding: 10px 15px; /* Adjust padding */
+    border-radius: 5px; /* Rounded corners */
+    font-size: 0.85rem; /* Slightly smaller font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.update:hover {
+    background-color: #e0a800; /* Darker yellow on hover */
 }
