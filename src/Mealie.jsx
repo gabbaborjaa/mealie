@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import NavBar from "./Components/Navbar";
+import AddMeal from "./Components/AddMeal";
+import EditMeal from "./Components/EditMeal";
 import './Mealie.css';
 
 const Mealie = () => {
@@ -58,6 +61,12 @@ const Mealie = () => {
     };
 
     const deleteMeal = (day, type) => {
+        const mealToDelete = meals.find((meal) => meal.day === day)?.[type];
+        if (!mealToDelete || !mealToDelete.name) return; // Skip if no meal exists
+
+        const confirmDelete = window.confirm("Are you sure you want to delete this meal?");
+        if (!confirmDelete) return;
+
         const updatedMeals = meals.map((meal) => {
             if (meal.day === day) {
                 return {
@@ -125,8 +134,9 @@ const Mealie = () => {
 
     return (
         <div className="main-container">
-            <h1 className="text-center mb-4">Mealie</h1>
-
+            <NavBar />
+            {/* <h1 className="text-center mb-4">Mealie</h1> */}
+            
             {/* Add Meal Button */}
             <div className="text-center mb-4">
                 <button
@@ -169,28 +179,30 @@ const Mealie = () => {
                                         >
                                             <strong>{mealData.name || "No meal"}</strong>
                                             {mealData.name && (
-                                                <div className="nutrition-data mt-2">
-                                                    <small>Protein: {mealData.protein}g</small>
-                                                    <br />
-                                                    <small>Carbs: {mealData.carbs}g</small>
-                                                    <br />
-                                                    <small>Sugars: {mealData.sugars}g</small>
-                                                </div>
+                                                <>
+                                                    <div className="nutrition-data mt-2">
+                                                        <small>Protein: {mealData.protein}g</small>
+                                                        <br />
+                                                        <small>Carbs: {mealData.carbs}g</small>
+                                                        <br />
+                                                        <small>Sugars: {mealData.sugars}g</small>
+                                                    </div>
+                                                    <div className="mt-2">
+                                                        <button
+                                                            className="update"
+                                                            onClick={() => handleEditMeal(meal, mealType.toLowerCase(), day)}
+                                                        >
+                                                            Update
+                                                        </button>
+                                                        <button
+                                                            className="delete"
+                                                            onClick={() => deleteMeal(day, mealType.toLowerCase())}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </>
                                             )}
-                                            <div className="mt-2">
-                                                <button
-                                                    className="update"
-                                                    onClick={() => handleEditMeal(meal, mealType.toLowerCase(), day)}
-                                                >
-                                                    Update
-                                                </button>
-                                                <button
-                                                    className="delete"
-                                                    onClick={() => deleteMeal(day, mealType.toLowerCase())}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
                                         </td>
                                     );
                                 })}
@@ -200,189 +212,21 @@ const Mealie = () => {
                 </table>
             </div>
 
-            {/* Add Meal Modal */}
-            {showModal && (
-                <div className="modal show d-block" tabIndex="-1">
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Add a New Meal</h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => setShowModal(false)}
-                                ></button>
-                            </div>
-                            <div className="modal-body">
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        addMeal();
-                                    }}
-                                >
-                                    <div className="mb-3">
-                                        <label className="form-label">Day</label>
-                                        <select
-                                            className="form-control"
-                                            value={newMeal.day}
-                                            onChange={(e) =>
-                                                setNewMeal({ ...newMeal, day: e.target.value })
-                                            }
-                                            required
-                                        >
-                                            <option value="">Select a day</option>
-                                            {days.map((day) => (
-                                                <option key={day} value={day}>
-                                                    {day}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Meal Type</label>
-                                        <select
-                                            className="form-control"
-                                            value={newMeal.type}
-                                            onChange={(e) =>
-                                                setNewMeal({ ...newMeal, type: e.target.value })
-                                            }
-                                            required
-                                        >
-                                            <option value="breakfast">Breakfast</option>
-                                            <option value="lunch">Lunch</option>
-                                            <option value="dinner">Dinner</option>
-                                        </select>
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Meal Name</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            placeholder="Name"
-                                            value={newMeal.name}
-                                            onChange={(e) =>
-                                                setNewMeal({ ...newMeal, name: e.target.value })
-                                            }
-                                            required
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Protein (g)</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={newMeal.protein}
-                                            onChange={(e) =>
-                                                setNewMeal({ ...newMeal, protein: +e.target.value })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Carbs (g)</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={newMeal.carbs}
-                                            onChange={(e) =>
-                                                setNewMeal({ ...newMeal, carbs: +e.target.value })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Sugars (g)</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={newMeal.sugars}
-                                            onChange={(e) =>
-                                                setNewMeal({ ...newMeal, sugars: +e.target.value })
-                                            }
-                                        />
-                                    </div>
-                                    <button type="submit" className="btn btn-primary">
-                                        Add Meal
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Meal Modal */}
-            {showEditModal && editMeal && (
-                <div className="modal show d-block" tabIndex="-1">
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Edit Meal</h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => setShowEditModal(false)}
-                                ></button>
-                            </div>
-                            <div className="modal-body">
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        saveMeal();
-                                    }}
-                                >
-                                    <div className="mb-3">
-                                        <label className="form-label">Meal Name</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={editMeal.name}
-                                            onChange={(e) =>
-                                                setEditMeal({ ...editMeal, name: e.target.value })
-                                            }
-                                            required
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Protein (g)</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={editMeal.protein}
-                                            onChange={(e) =>
-                                                setEditMeal({ ...editMeal, protein: +e.target.value })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Carbs (g)</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={editMeal.carbs}
-                                            onChange={(e) =>
-                                                setEditMeal({ ...editMeal, carbs: +e.target.value })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Sugars (g)</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={editMeal.sugars}
-                                            onChange={(e) =>
-                                                setEditMeal({ ...editMeal, sugars: +e.target.value })
-                                            }
-                                        />
-                                    </div>
-                                    <button type="submit" className="btn btn-primary">
-                                        Save Changes
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AddMeal
+                showModal={showModal}
+                setShowModal={setShowModal}
+                newMeal={newMeal}
+                setNewMeal={setNewMeal}
+                addMeal={addMeal}
+                days={days}
+            />
+            <EditMeal
+                showEditModal={showEditModal}
+                setShowEditModal={setShowEditModal}
+                editMeal={editMeal}
+                setEditMeal={setEditMeal}
+                saveMeal={saveMeal}
+            />
         </div>
     );
 };
