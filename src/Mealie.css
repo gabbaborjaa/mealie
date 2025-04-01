@@ -1,25 +1,42 @@
 .body{
     background-color: #f7fafd;
+    justify-content: center;
+    align-items: center;
 }
+
+
+/* Ensure the table fits the parent container */
 .calendar-table {
     background-color: #f8f9fa; /* Light gray background */
     border-radius: 8px; /* Rounded corners */
     overflow: hidden; /* Prevent content overflow */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-    
+    /* width: 100%; */
+    /* height: calc(100vh - 150px);  */
+    display: flex; /* Flexbox for alignment */
+    justify-content: center; /* Center the table horizontally */
+    align-items: center; /* Center the table vertically */
+    margin: 20px;
+}
+
+.calendar-table table {
+    width: 100%; /* Full width of the parent */
+    height: 100%; /* Full height of the parent */
+    border-collapse: collapse; /* Remove gaps between table cells */
+}
+
+.calendar-table th,
+.calendar-table td {
+    padding: 15px;
+    vertical-align: middle; /* Center content vertically */
+    text-align: center; /* Center align text */
+    border: 1px solid #dee2e6; /* Add borders to table cells */
 }
 
 .calendar-table th {
     background-color: #343a40; /* Dark header background */
     color: white; /* White text for headers */
-    padding: 10px;
     font-size: 1.1rem;
-}
-
-.calendar-table td {
-    padding: 15px;
-    vertical-align: middle; /* Center content vertically */
-    font-size: 0.9rem;
 }
 
 .calendar-table td.no-meal {
@@ -27,27 +44,94 @@
     font-style: italic;
 }
 
-.calendar-table td .btn {
-    font-size: 0.8rem; /* Smaller buttons */
-    padding: 5px 10px;
+.calendar-table td.has-meal {
+    background-color: #e9ecef; /* Light gray for cells with meals */
 }
 
-/* .btn .btn-primary .mt-4 {
-    margin-bottom: 20px;
-    justify-content: center;
-} */
-.button-container {
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    margin-bottom: 2rem;
+/* Responsive Design for Mobile */
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+    .calendar-table {
+        font-size: 0.8rem; /* Reduce font size for smaller screens */
+    }
+
+    .calendar-table th,
+    .calendar-table td {
+        padding: 10px; /* Reduce padding for smaller screens */
+    }
+
+    .calendar-table th:first-child,
+    .calendar-table td:first-child {
+        display: none; /* Hide the "Meal Type" column on mobile */
+    }
+
+    .add-meal {
+        text-align: center;
+        margin: 1rem 0;
+    }
+
+    .nutrition-data {
+        font-size: 0.75rem; /* Smaller text for nutrition data */
+    }
+
+    .update,
+    .delete {
+        font-size: 0.75rem; /* Smaller buttons */
+        padding: 5px 10px;
+    }
+
+    .main-container {
+        padding: 10px; /* Add padding for smaller screens */
+    }
 }
 
-.main-container {
-    margin: 5vw;
-}
+/* Extra Small Screens */
+@media (max-width: 480px) {
+    .calendar-table {
+        font-size: 0.7rem; /* Further reduce font size for very small screens */
+    }
 
+    .calendar-table th,
+    .calendar-table td {
+        padding: 8px; /* Further reduce padding */
+    }
+
+    .add-meal {
+        margin: 0.5rem 0;
+    }
+
+    .nutrition-data {
+        font-size: 0.65rem; /* Even smaller text for nutrition data */
+    }
+
+    .update,
+    .delete {
+        font-size: 0.65rem; /* Smaller buttons */
+        padding: 4px 8px;
+    }
+}
 /* Button Styling */
+
+.navbar-buttons {
+    display: flex;
+    gap: 10px; /* Add spacing between buttons */
+}
+.button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 5px; /* Rounded corners */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.add-meal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
 .delete {
     margin: 5px;
     background-color: #dc3545; /* Bootstrap danger red */
@@ -84,9 +168,24 @@
 /* Navbar Styling */
 
 .Navbar {
-    border-radius: 10px;
-    background-color: gray;
+    /* border-radius: 10px; */
+    background-color: #F3E5AB;
     display: flex;
-    justify-content: center;
+    justify-content: right;
     align-items: center;
+}
+
+.calendar-days {
+    text-align: center; /* Center align text */
+    font-weight: bold; /* Make text bold */
+    margin-top: 1rem; /* Add spacing above */
+}
+
+.meals {
+    
+    text-transform: capitalize; /* Capitalize the first letter of each word */
+    
+    text-align: left; /* Align text to the left */
+    background-color: #f8f9fa; /* Light gray background */
+    border: 1px solid #dee2e6; /* Add a border for separation */
 }

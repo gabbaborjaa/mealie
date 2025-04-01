@@ -50,15 +50,13 @@ function LoginModal() {
                                 required
                             />
                         </Form.Group>
-                        <Button variant="primary" type="submit" className="w-100">
-                            Login
-                        </Button>
+                        
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
+                <Button variant="primary" type="submit" className="w-100">
+                            Login
+                        </Button>
                 </Modal.Footer>
             </Modal>
         </>
