@@ -14,13 +14,9 @@ function NavBar({ setShowModal }) {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto"> </Nav>
           <div className="navbar-buttons"> 
-          <Button
-            
-            onClick={() => {}}
-            className="button"
-          >
-            <LoginModal />
-          </Button>
+          
+          <LoginModal />
+          
           <Button
             
             onClick={() => setShowModal(true)} // Open the Add Meal modal

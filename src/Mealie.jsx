@@ -12,7 +12,7 @@ const Mealie = () => {
     const [showEditModal, setShowEditModal] = useState(false); // Control the edit modal
     const [editMeal, setEditMeal] = useState(null); // Track the meal being edited
     const [newMeal, setNewMeal] = useState({
-        day: "",
+        day: "Monday",
         type: "breakfast", // Default to breakfast
         name: "",
         protein: 0,
@@ -23,172 +23,189 @@ const Mealie = () => {
 
     useEffect(() => {
         const fetchMeals = async () => {
-            const mealsCollection = collection(db, 'meals');
-            const mealSnapshot = await getDocs(mealsCollection);
-            const mealList = mealSnapshot.docs.map(doc => doc.data());
-            setMeals(mealList);
+            try {
+                const mealsCollection = collection(db, 'meals');
+                const mealSnapshot = await getDocs(mealsCollection);
+                const mealList = mealSnapshot.docs.map((doc) => doc.data());
+    
+                // Group meals by day and meal type
+                const groupedMeals = days.reduce((acc, day) => {
+                    acc[day] = {
+                        breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                    };
+                    return acc;
+                }, {});
+    
+                mealList.forEach((meal) => {
+                    if (groupedMeals[meal.day]) {
+                        groupedMeals[meal.day][meal.meal_type] = {
+                            name: meal.name,
+                            protein: meal.protein,
+                            carbs: meal.carbs,
+                            sugars: meal.sugars,
+                        };
+                    }
+                });
+    
+                setMeals(groupedMeals);
+                console.log("Fetched meals:", groupedMeals);
+            } catch (error) {
+                console.error("Error fetching meals:", error);
+            }
         };
-
+    
         fetchMeals();
     }, []);
-    //     }
-    //     // Placeholder for fetching meals
-    //     const fetchMeals = async () => {
-    //         const mealList = [
-    //             {
-    //                 id: "1",
-    //                 day: "Monday",
-    //                 breakfast: { name: "Oatmeal", protein: 5, carbs: 27, sugars: 1 },
-    //                 lunch: { name: "Chicken Salad", protein: 30, carbs: 10, sugars: 5 },
-    //                 dinner: { name: "Steak", protein: 40, carbs: 0, sugars: 0 },
-    //             },
-    //             {
-    //                 id: "2",
-    //                 day: "Tuesday",
-    //                 breakfast: { name: "Oatmeal", protein: 5, carbs: 27, sugars: 1 },
-    //                 lunch: { name: "Chicken Salad", protein: 30, carbs: 10, sugars: 5 },
-    //                 dinner: { name: "Steak", protein: 40, carbs: 0, sugars: 0 },
-    //             },
-    //             {
-    //                 id: "3",
-    //                 day: "Wednesday",
-    //                 breakfast: { name: "Oatmeal", protein: 5, carbs: 27, sugars: 1 },
-    //                 lunch: { name: "Chicken Salad", protein: 30, carbs: 10, sugars: 5 },
-    //                 dinner: { name: "Steak", protein: 40, carbs: 0, sugars: 0 },
-    //             },
-    //             {
-    //                 id: "4",
-    //                 day: "Thursday",
-    //                 breakfast: { name: "Oatmeal", protein: 5, carbs: 27, sugars: 1 },
-    //                 lunch: { name: "Chicken Salad", protein: 30, carbs: 10, sugars: 5 },
-    //                 dinner: { name: "Steak", protein: 40, carbs: 0, sugars: 0 },
-    //             },
-    //             {
-    //                 id: "5",
-    //                 day: "Friday",
-    //                 breakfast: { name: "Oatmeal", protein: 5, carbs: 27, sugars: 1 },
-    //                 lunch: { name: "Chicken Salad", protein: 30, carbs: 10, sugars: 5 },
-    //                 dinner: { name: "Steak", protein: 40, carbs: 0, sugars: 0 },
-    //             },
-    //         ];
-    //         setMeals(mealList);
-    //     };
-
-    //     fetchMeals();
-    // }, []);
 
     const handleEditMeal = (meal, type, day) => {
         setEditMeal({ ...meal[type], type, day });
         setShowEditModal(true);
     };
 
-    // const saveMeal = () => {
-    //     const updatedMeals = meals.map((meal) => {
-    //         if (meal.day === editMeal.day) {
-    //             return {
-    //                 ...meal,
-    //                 [editMeal.type]: {
-    //                     name: editMeal.name,
-    //                     protein: editMeal.protein,
-    //                     carbs: editMeal.carbs,
-    //                     sugars: editMeal.sugars,
-    //                 },
-    //             };
-    //         }
-    //         return meal;
-    //     });
-    //     setMeals(updatedMeals);
-    //     setShowEditModal(false);
-    // };
-
-    // const deleteMeal = (day, type) => {
-    //     const mealToDelete = meals.find((meal) => meal.day === day)?.[type];
-    //     if (!mealToDelete || !mealToDelete.name) return; // Skip if no meal exists
-
-    //     const confirmDelete = window.confirm("Are you sure you want to delete this meal?");
-    //     if (!confirmDelete) return;
-
-    //     const updatedMeals = meals.map((meal) => {
-    //         if (meal.day === day) {
-    //             return {
-    //                 ...meal,
-    //                 [type]: { name: "", protein: 0, carbs: 0, sugars: 0 },
-    //             };
-    //         }
-    //         return meal;
-    //     });
-    //     setMeals(updatedMeals);
-    // };
-
     const deleteMeal = async (day, type) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this meal?");
         if (!confirmDelete) return;
-
-        const mealsCollection = collection(db, 'meals');
-        const mealDoc = doc(mealsCollection,day);
-
-        const mealSnapshot = await getDocs(mealDoc);
-        if (mealSnapshot.exists()) {
-            const mealData = mealSnapshot.data();
-            mealData[type] = { name: "", protein: 0, carbs: 0, sugars: 0 };
-
+    
+        try {
+            const mealToDelete = meals[day]?.[type];
+            if (!mealToDelete || !mealToDelete.name) {
+                console.error("Meal to delete not found!");
+                return;
+            }
+    
+            const mealDocId = `${day}_${mealToDelete.name.replace(/\s+/g, "")}`;
+            const mealDoc = doc(collection(db, 'meals'), mealDocId);
+    
+            console.log("Deleting meal:", mealToDelete); // Debugging
+    
+            // Delete the Firestore document
             await deleteDoc(mealDoc);
+    
+            console.log("Meal deleted successfully!");
+    
+            // Update the local meals state
+            setMeals((prevMeals) => {
+                const updatedMeals = { ...prevMeals };
+                if (updatedMeals[day]) {
+                    updatedMeals[day][type] = {
+                        name: "",
+                        protein: 0,
+                        carbs: 0,
+                        sugars: 0,
+                    };
+                }
+                return updatedMeals;
+            });
+        } catch (error) {
+            console.error("Error deleting meal:", error);
         }
     };
 
     const addMeal = async () => {
-        const mealsCollection = collection(db, 'meals');
-        const mealDoc = doc(mealsCollection, newMeal.day); // Use day as document ID
+        setShowModal(false);
 
-        // Add a new meal
-        await setDoc(mealDoc, {
-            day: newMeal.day,
-            breakfast: { name: "", protein: 0, carbs: 0, sugars: 0},
-            lunch: { name: "", protein: 0, carbs: 0, sugars: 0},
-            dinner:  { name: "", protein: 0, carbs: 0, sugars: 0},
-            [newMeal.type]: {
+        try {
+            const mealsCollection = collection(db, 'meals');
+            const mealDocId = `${newMeal.day}_${newMeal.name.replace(/\s+/g, "")}`; // Unique ID
+            const mealDoc = doc(mealsCollection, mealDocId);
+
+            console.log("Adding meal: ", newMeal);
+
+            // Add the new meal to Firestore
+            await setDoc(mealDoc, {
+                day: newMeal.day,
+                meal_type: newMeal.type,
                 name: newMeal.name,
                 protein: newMeal.protein,
                 carbs: newMeal.carbs,
-                sugars: newMeal.sugars
-            },
-        });
+                sugars: newMeal.sugars,
+            });
 
-        setNewMeal({
-            day: "",
-            type: "breakfast",
-            name: "",
-            protein: 0,
-            carbs: 0,
-            sugars: 0,
-        });
-        setShowModal(false);
+            console.log("Meal added successfully!");
+
+            // Update the local meals state directly
+            setMeals((prevMeals) => {
+                const updatedMeals = { ...prevMeals };
+                if (!updatedMeals[newMeal.day]) {
+                    updatedMeals[newMeal.day] = {
+                        breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                    };
+                }
+                updatedMeals[newMeal.day][newMeal.type] = {
+                    name: newMeal.name,
+                    protein: newMeal.protein,
+                    carbs: newMeal.carbs,
+                    sugars: newMeal.sugars,
+                };
+                return updatedMeals;
+            });
+
+            // Reset the newMeal state
+            setNewMeal({
+                day: "Monday",
+                type: "breakfast",
+                name: "",
+                protein: 0,
+                carbs: 0,
+                sugars: 0,
+            });
+        } catch (error) {
+            console.error("Error adding meal:", error);
+        }
     };
 
     const saveMeal = async () => {
-        const mealsCollection = collection(db, 'meals');
-        const mealDoc = doc(mealsCollection, editMeal.day);
+        try {
+            const mealsCollection = collection(db, 'meals');
+            const mealDocId = `${editMeal.day}_${editMeal.name.replace(/\s+/g, "")}`;
+            const mealDoc = doc(mealsCollection, mealDocId);
+            
+            console.log("Updating meal:", editMeal);
 
-        // 
-        await setDoc(mealDoc, {
-            day: editMeal.day,
-            breakfast: { name: "", protein: 0, carbs: 0, sugars: 0},
-            lunch: { name: "", protein: 0, carbs: 0, sugars: 0},
-            dinner:  { name: "", protein: 0, carbs: 0, sugars: 0},
-            [editMeal.type]: {
+            await setDoc(mealDoc, {
+                day: editMeal.day,
+                meal_type: editMeal.type,
                 name: editMeal.name,
                 protein: editMeal.protein,
                 carbs: editMeal.carbs,
-                sugars: editMeal.sugars
-            },
-        });
-        setShowEditModal(false);
+                sugars: editMeal.sugars,
+            });
+    
+            console.log("Meal updated successfully!");
+            
+            setMeals((prevMeals) => {
+                const updatedMeals = {...prevMeals };
+                if (updatedMeals[editMeal.day]){
+                    updatedMeals[editMeal.day][editMeal.type] = {
+                        name: editMeal.name,
+                        protein: editMeal.protein,
+                        carbs: editMeal.carbs,
+                        sugars: editMeal.sugars
+                    };
+                }
+                return updatedMeals;
+            });
+
+            setShowEditModal(false)
+
+            // Refetch meals to update the UI
+            // const mealsCollectionSnapshot = await getDocs(mealsCollection);
+            // const updatedMealList = mealsCollectionSnapshot.docs.map((doc) => doc.data());
+            // setMeals(updatedMealList);
+    
+            // setShowEditModal(false); // Close the edit modal
+        } catch (error) {
+            console.error("Error updating meal:", error);
+        }
     };
 
     const currentDay = new Date().toLocaleString("en-US", { weekday: "long" });
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const mealTypes = ["Breakfast", "Lunch", "Dinner"];
-
 
     // Mealie UI
     return (
@@ -215,12 +232,12 @@ const Mealie = () => {
                             <tr key={mealType}>
                                 <td className="meals">{mealType}</td>
                                 {days.map((day) => {
-                                    const meal = meals.find((m) => m.day === day) || {
-                                        breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                                        lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                                        dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                                        const mealData = meals[day]?.[mealType.toLowerCase()] || {
+                                            name: "",
+                                            protein: 0,
+                                            carbs: 0,
+                                            sugars: 0,
                                     };
-                                    const mealData = meal[mealType.toLowerCase()];
 
                                     return (
                                         <td
@@ -242,7 +259,7 @@ const Mealie = () => {
                                                     <div className="mt-2">
                                                         <button
                                                             className="update"
-                                                            onClick={() => handleEditMeal(meal, mealType.toLowerCase(), day)}
+                                                            onClick={() => handleEditMeal(mealData, mealType.toLowerCase(), day)}
                                                         >
                                                             Update
                                                         </button>

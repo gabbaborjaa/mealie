@@ -1,5 +1,4 @@
 import React from "react";
-import { Modal } from "react-bootstrap";
 
 const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal, days }) => {
     if (!showModal) return null;

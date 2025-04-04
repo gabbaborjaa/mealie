@@ -2,7 +2,7 @@ import React from "react";
 
 const EditMeal = ({ showEditModal, setShowEditModal, editMeal, setEditMeal, saveMeal }) => {
     if (!showEditModal || !editMeal) return null;
-
+    console.log("Editing Meal: ", editMeal);
     return (
         <div className="modal show d-block" tabIndex="-1">
             <div className="modal-dialog">
@@ -19,6 +19,7 @@ const EditMeal = ({ showEditModal, setShowEditModal, editMeal, setEditMeal, save
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
+                                console.log("Saving meal: " ,editMeal);
                                 saveMeal();
                             }}
                         >
@@ -41,7 +42,7 @@ const EditMeal = ({ showEditModal, setShowEditModal, editMeal, setEditMeal, save
                                     className="form-control"
                                     value={editMeal.protein}
                                     onChange={(e) =>
-                                        setEditMeal({ ...editMeal, protein: +e.target.value })
+                                        setEditMeal({ ...editMeal, protein: e.target.value })
                                     }
                                 />
                             </div>
@@ -52,7 +53,7 @@ const EditMeal = ({ showEditModal, setShowEditModal, editMeal, setEditMeal, save
                                     className="form-control"
                                     value={editMeal.carbs}
                                     onChange={(e) =>
-                                        setEditMeal({ ...editMeal, carbs: +e.target.value })
+                                        setEditMeal({ ...editMeal, carbs: e.target.value })
                                     }
                                 />
                             </div>
@@ -63,7 +64,7 @@ const EditMeal = ({ showEditModal, setShowEditModal, editMeal, setEditMeal, save
                                     className="form-control"
                                     value={editMeal.sugars}
                                     onChange={(e) =>
-                                        setEditMeal({ ...editMeal, sugars: +e.target.value })
+                                        setEditMeal({ ...editMeal, sugars: e.target.value })
                                     }
                                 />
                             </div>
