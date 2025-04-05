@@ -50,14 +50,15 @@ const Mealie = () => {
                 });
     
                 setMeals(groupedMeals);
-                console.log("Fetched meals:", groupedMeals);
+                // console.log("Fetched meals:", groupedMeals);
+                // console.log("Fetched meals sucessfully")
             } catch (error) {
                 console.error("Error fetching meals:", error);
             }
         };
     
         fetchMeals();
-    }, []);
+    });
 
     const handleEditMeal = (meal, type, day) => {
         setEditMeal({ ...meal[type], type, day });
