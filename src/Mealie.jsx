@@ -1,18 +1,26 @@
 import { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import NavBar from "./Components/Navbar";
-import AddMeal from "./Components/AddMeal";
 import EditMeal from "./Components/EditMeal";
 import './Mealie.css';
 import { collection, doc, getDocs, deleteDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase-config";
 
+const getCurrentWeek = (date = new Date()) => {
+    const startofWeek = new Date(date.setDate(date.getDate() - date.getDay()));
+    return Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(startofWeek);
+        day.setDate(startofWeek.getDate() + i);
+        return day;
+    });
+};
 const Mealie = () => {
     const [meals, setMeals] = useState([]);
     const [showEditModal, setShowEditModal] = useState(false); // Control the edit modal
     const [editMeal, setEditMeal] = useState(null); // Track the meal being edited
+    const [currentWeek, setCurrentWeek] = useState(getCurrentWeek());
     const [newMeal, setNewMeal] = useState({
-        day: "Monday",
+        date: new Date().toISOString().split("T")[0], // Default to today's date in YYYY-MM-DD format
         type: "breakfast", // Default to breakfast
         name: "",
         protein: 0,
@@ -20,6 +28,7 @@ const Mealie = () => {
         sugars: 0,
     });
     const [showModal, setShowModal] = useState(false);
+    const [animationDirection, setAnimationDirection] = useState(""); // Track animation direction
 
     useEffect(() => {
         const fetchMeals = async () => {
@@ -27,56 +36,53 @@ const Mealie = () => {
                 const mealsCollection = collection(db, 'meals');
                 const mealSnapshot = await getDocs(mealsCollection);
                 const mealList = mealSnapshot.docs.map((doc) => doc.data());
-    
-                // Group meals by day and meal type
-                const groupedMeals = days.reduce((acc, day) => {
-                    acc[day] = {
-                        breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                        lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                        dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
+
+                // Group meals by date
+                const groupedMeals = mealList.reduce((acc, meal) => {
+                    if (!acc[meal.date]) {
+                        acc[meal.date] = {
+                            breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                            lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                            dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        };
+                    }
+                    acc[meal.date][meal.meal_type] = {
+                        name: meal.name,
+                        protein: meal.protein,
+                        carbs: meal.carbs,
+                        sugars: meal.sugars,
                     };
                     return acc;
                 }, {});
-    
-                mealList.forEach((meal) => {
-                    if (groupedMeals[meal.day]) {
-                        groupedMeals[meal.day][meal.meal_type] = {
-                            name: meal.name,
-                            protein: meal.protein,
-                            carbs: meal.carbs,
-                            sugars: meal.sugars,
-                        };
-                    }
-                });
-    
+
                 setMeals(groupedMeals);
-                // console.log("Fetched meals:", groupedMeals);
-                // console.log("Fetched meals sucessfully")
             } catch (error) {
                 console.error("Error fetching meals:", error);
             }
         };
-    
-        fetchMeals();
-    });
 
-    const handleEditMeal = (meal, type, day) => {
-        setEditMeal({ ...meal[type], type, day });
+        fetchMeals();
+    }, []);
+
+    
+
+    const handleEditMeal = (meal, type, dateKey) => {
+        setEditMeal({ ...meal[type], type, day: dateKey });
         setShowEditModal(true);
     };
 
-    const deleteMeal = async (day, type) => {
+    const deleteMeal = async (dateKey, type) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this meal?");
         if (!confirmDelete) return;
     
         try {
-            const mealToDelete = meals[day]?.[type];
+            const mealToDelete = meals[dateKey]?.[type];
             if (!mealToDelete || !mealToDelete.name) {
                 console.error("Meal to delete not found!");
                 return;
             }
     
-            const mealDocId = `${day}_${mealToDelete.name.replace(/\s+/g, "")}`;
+            const mealDocId = `${dateKey}_${mealToDelete.name.replace(/\s+/g, "")}`;
             const mealDoc = doc(collection(db, 'meals'), mealDocId);
     
             console.log("Deleting meal:", mealToDelete); // Debugging
@@ -89,8 +95,8 @@ const Mealie = () => {
             // Update the local meals state
             setMeals((prevMeals) => {
                 const updatedMeals = { ...prevMeals };
-                if (updatedMeals[day]) {
-                    updatedMeals[day][type] = {
+                if (updatedMeals[dateKey]) {
+                    updatedMeals[dateKey][type] = {
                         name: "",
                         protein: 0,
                         carbs: 0,
@@ -109,14 +115,11 @@ const Mealie = () => {
 
         try {
             const mealsCollection = collection(db, 'meals');
-            const mealDocId = `${newMeal.day}_${newMeal.name.replace(/\s+/g, "")}`; // Unique ID
+            const mealDocId = `${newMeal.date}_${newMeal.type.replace(/\s+/g, "")}`; // Unique ID
             const mealDoc = doc(mealsCollection, mealDocId);
 
-            console.log("Adding meal: ", newMeal);
-
-            // Add the new meal to Firestore
             await setDoc(mealDoc, {
-                day: newMeal.day,
+                date: newMeal.date,
                 meal_type: newMeal.type,
                 name: newMeal.name,
                 protein: newMeal.protein,
@@ -124,19 +127,17 @@ const Mealie = () => {
                 sugars: newMeal.sugars,
             });
 
-            console.log("Meal added successfully!");
-
-            // Update the local meals state directly
+            // Update local state
             setMeals((prevMeals) => {
                 const updatedMeals = { ...prevMeals };
-                if (!updatedMeals[newMeal.day]) {
-                    updatedMeals[newMeal.day] = {
+                if (!updatedMeals[newMeal.date]) {
+                    updatedMeals[newMeal.date] = {
                         breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
                         lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
                         dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
                     };
                 }
-                updatedMeals[newMeal.day][newMeal.type] = {
+                updatedMeals[newMeal.date][newMeal.type] = {
                     name: newMeal.name,
                     protein: newMeal.protein,
                     carbs: newMeal.carbs,
@@ -147,7 +148,7 @@ const Mealie = () => {
 
             // Reset the newMeal state
             setNewMeal({
-                day: "Monday",
+                date: new Date().toISOString().split("T")[0], // Reset to today's date
                 type: "breakfast",
                 name: "",
                 protein: 0,
@@ -204,8 +205,8 @@ const Mealie = () => {
         }
     };
 
-    const currentDay = new Date().toLocaleString("en-US", { weekday: "long" });
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    // const currentDay = new Date().toLocaleString("en-US", { weekday: "long" });
+    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const mealTypes = ["Breakfast", "Lunch", "Dinner"];
 
     // Mealie UI
@@ -216,70 +217,93 @@ const Mealie = () => {
             <div className="add-meal">
                 <Button variant="primary" onClick={() => setShowModal(true)} > Add Meal </Button>
             </div>
-
+            <div className="week-nav"> 
+                <Button
+                    variant="secondary"
+                    onClick={() => {
+                        setAnimationDirection("next");
+                        setTimeout(() => {
+                            setCurrentWeek(getCurrentWeek(new Date(currentWeek[0].setDate(currentWeek[0].getDate() - 7))));
+                            setAnimationDirection(""); // Reset animation direction
+                        }, 300); // Match the animation duration
+                    }}
+                >
+                    Previous Week
+                </Button>
+                
+                <Button variant="secondary"
+                    onClick={() => {
+                        setAnimationDirection("prev");
+                        setTimeout(() => {
+                            setCurrentWeek(getCurrentWeek(new Date(currentWeek[0].setDate(currentWeek[0].getDate() + 7))));
+                            setAnimationDirection(""); // Reset animation direction
+                        }, 300); // Match the animation duration
+                    }}
+                >
+                    Next Week
+                </Button>
+            </div>
             {/* Calendar Table */}
-            <div className="calendar-table">
-                <table className="calender-table th">
-                    <thead>
-                        <tr>
-                            <th>Meal Type</th>
-                            {days.map((day) => (
-                                <th key={day}>{day}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {mealTypes.map((mealType) => (
-                            <tr key={mealType}>
-                                <td className="meals">{mealType}</td>
-                                {days.map((day) => {
-                                        const mealData = meals[day]?.[mealType.toLowerCase()] || {
+            <div className="calendar-container">
+                <div className={`calendar-table ${animationDirection}`}>
+                    <table className="calender-table th">
+                        <thead>
+                            <tr>
+                                <th>Meal Type</th>
+                                {currentWeek.map((date) => (
+                                    <th key={date.toISOString()}>{date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {mealTypes.map((mealType) => (
+                                <tr key={mealType}>
+                                    <td className="meals">{mealType}</td>
+                                    {currentWeek.map((date) => {
+                                        const dateKey = date.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+                                        const mealData = meals[dateKey]?.[mealType.toLowerCase()] || {
                                             name: "",
                                             protein: 0,
                                             carbs: 0,
                                             sugars: 0,
-                                    };
+                                        };
 
-                                    return (
-                                        <td
-                                            key={day}
-                                            className={`meal-cell ${mealData.name ? "has-meal" : "no-meal"} ${
-                                                day === currentDay ? "table-primary" : ""
-                                            }`}
-                                        >
-                                            <strong>{mealData.name || "No meal"}</strong>
-                                            {mealData.name && (
-                                                <>
-                                                    <div className="nutrition-data mt-2">
-                                                        <small>Protein: {mealData.protein}g</small>
-                                                        <br />
-                                                        <small>Carbs: {mealData.carbs}g</small>
-                                                        <br />
-                                                        <small>Sugars: {mealData.sugars}g</small>
-                                                    </div>
-                                                    <div className="mt-2">
-                                                        <button
-                                                            className="update"
-                                                            onClick={() => handleEditMeal(mealData, mealType.toLowerCase(), day)}
-                                                        >
-                                                            Update
-                                                        </button>
-                                                        <button
-                                                            className="delete"
-                                                            onClick={() => deleteMeal(day, mealType.toLowerCase())}
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                        return (
+                                            <td key={dateKey} className={`meal-cell ${mealData.name ? "has-meal" : "no-meal"}`}>
+                                                <strong>{mealData.name || "No meal"}</strong>
+                                                {mealData.name && (
+                                                    <>
+                                                        <div className="nutrition-data mt-2">
+                                                            <small>Protein: {mealData.protein}g</small>
+                                                            <br />
+                                                            <small>Carbs: {mealData.carbs}g</small>
+                                                            <br />
+                                                            <small>Sugars: {mealData.sugars}g</small>
+                                                        </div>
+                                                        <div className="mt-2">
+                                                            <button
+                                                                className="update"
+                                                                onClick={() => handleEditMeal(meals[dateKey], mealType.toLowerCase(), dateKey)}
+                                                            >
+                                                                Update
+                                                            </button>
+                                                            <button
+                                                                className="delete"
+                                                                onClick={() => deleteMeal(dateKey, mealType.toLowerCase())}
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <AddMeal
@@ -288,7 +312,6 @@ const Mealie = () => {
                 newMeal={newMeal}
                 setNewMeal={setNewMeal}
                 addMeal={addMeal}
-                days={days}
             />
             <EditMeal
                 showEditModal={showEditModal}
@@ -297,6 +320,99 @@ const Mealie = () => {
                 setEditMeal={setEditMeal}
                 saveMeal={saveMeal}
             />
+        </div>
+    );
+};
+
+const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal }) => {
+    if (!showModal) return null;
+
+    return (
+        <div className="modal show d-block" tabIndex="-1">
+            <div className="modal-dialog">
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h5 className="modal-title">Add Meal</h5>
+                        <button
+                            type="button"
+                            className="btn-close"
+                            onClick={() => setShowModal(false)}
+                        ></button>
+                    </div>
+                    <div className="modal-body">
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                addMeal();
+                            }}
+                        >
+                            <div className="mb-3">
+                                <label className="form-label">Date</label>
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    value={newMeal.date}
+                                    onChange={(e) => setNewMeal({ ...newMeal, date: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Meal Type</label>
+                                <select
+                                    className="form-control"
+                                    value={newMeal.type}
+                                    onChange={(e) => setNewMeal({ ...newMeal, type: e.target.value })}
+                                    required
+                                >
+                                    <option value="breakfast">Breakfast</option>
+                                    <option value="lunch">Lunch</option>
+                                    <option value="dinner">Dinner</option>
+                                </select>
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Meal Name</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={newMeal.name}
+                                    onChange={(e) => setNewMeal({ ...newMeal, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Protein (g)</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={newMeal.protein}
+                                    onChange={(e) => setNewMeal({ ...newMeal, protein: +e.target.value })}
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Carbs (g)</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={newMeal.carbs}
+                                    onChange={(e) => setNewMeal({ ...newMeal, carbs: +e.target.value })}
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Sugars (g)</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={newMeal.sugars}
+                                    onChange={(e) => setNewMeal({ ...newMeal, sugars: +e.target.value })}
+                                />
+                            </div>
+                            <button type="submit" className="btn btn-primary">
+                                Add Meal
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
