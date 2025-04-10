@@ -1,9 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "@firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.apiKey,
+  apiKey: "AIzaSyAfQg7-uC0PoYCOiSO2lik-LWLyEGGWQ48",
   authDomain: process.env.authDomain,
   projectId: "mealie-e6c06",
   storageBucket: process.env.storageBucket,
@@ -15,3 +16,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig); // Establish connection
 
 export const db = getFirestore(app);
+export const auth = getAuth(app);

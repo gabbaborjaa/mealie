@@ -2,96 +2,156 @@ import { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import NavBar from "./Components/Navbar";
 import EditMeal from "./Components/EditMeal";
+import AddMeal from "./Components/AddMeal";
 import './Mealie.css';
-import { collection, doc, getDocs, deleteDoc, setDoc } from "firebase/firestore";
-import { db } from "./firebase-config";
+import { collection, doc, getDocs, deleteDoc, setDoc, getDoc } from "firebase/firestore";
+import { db, auth } from "./firebase-config";
+import { onAuthStateChanged } from "firebase/auth";
 
-const getCurrentWeek = (date = new Date()) => {
-    const startofWeek = new Date(date.setDate(date.getDate() - date.getDay()));
-    return Array.from({ length: 7 }, (_, i) => {
-        const day = new Date(startofWeek);
-        day.setDate(startofWeek.getDate() + i);
+
+/**
+ * Utility function to get the current week based on the number of days (7 or 5).
+ * For a 5-day view, the week starts on Monday.
+ * @param {Date} date - The starting date.
+ * @param {number} days - Number of days in the week (7 or 5).
+ * @returns {Array<Date>} - Array of dates for the week.
+ */
+const getCurrentWeek = (date = new Date(), days = 7) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + (days === 5 ? 1 : 0)); // Start on Monday for 5-day view
+    return Array.from({ length: days }, (_, i) => {
+        const day = new Date(startOfWeek);
+        day.setDate(startOfWeek.getDate() + i);
         return day;
     });
 };
+
 const Mealie = () => {
-    const [meals, setMeals] = useState([]);
-    const [showEditModal, setShowEditModal] = useState(false); // Control the edit modal
-    const [editMeal, setEditMeal] = useState(null); // Track the meal being edited
-    const [currentWeek, setCurrentWeek] = useState(getCurrentWeek());
+    // State variables
+    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]; // Days of the week
+    const [meals, setMeals] = useState([]); // Stores all meals grouped by date
+    const [showEditModal, setShowEditModal] = useState(false); // Controls the edit modal visibility
+    const [editMeal, setEditMeal] = useState(null); // Tracks the meal being edited
+    const [currentWeek, setCurrentWeek] = useState(getCurrentWeek()); // Tracks the current week being displayed
+    const [isSevenDayView, setIsSevenDayView] = useState(true); // Toggles between 7-day and 5-day views
     const [newMeal, setNewMeal] = useState({
-        date: new Date().toISOString().split("T")[0], // Default to today's date in YYYY-MM-DD format
-        type: "breakfast", // Default to breakfast
+        date: new Date().toISOString().split("T")[0], // Default to today's date
+        type: "breakfast", // Default meal type
         name: "",
         protein: 0,
         carbs: 0,
         sugars: 0,
     });
-    const [showModal, setShowModal] = useState(false);
-    const [animationDirection, setAnimationDirection] = useState(""); // Track animation direction
+    const [showModal, setShowModal] = useState(false); // Controls the add meal modal visibility
+    const [animationDirection, setAnimationDirection] = useState(""); // Tracks animation direction for week navigation
+    const [user, setUser] = useState(null);
+    const [userName, setUserName] = useState(null);
 
+    /**
+     * Fetch meals from Firestore and group them by date.
+     */
     useEffect(() => {
-        const fetchMeals = async () => {
-            try {
-                const mealsCollection = collection(db, 'meals');
-                const mealSnapshot = await getDocs(mealsCollection);
-                const mealList = mealSnapshot.docs.map((doc) => doc.data());
-
-                // Group meals by date
-                const groupedMeals = mealList.reduce((acc, meal) => {
-                    if (!acc[meal.date]) {
-                        acc[meal.date] = {
-                            breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                            lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                            dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
-                        };
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setUser(currentUser);
+            if (currentUser) {
+                try {
+                    // Fetch the user's document from Firestore
+                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        console.log("User data fetched:", userData); // Debugging
+                        setUserName(userData.name); // Set the user's name
+                    } else {
+                        console.error("User document does not exist in Firestore.");
                     }
-                    acc[meal.date][meal.meal_type] = {
-                        name: meal.name,
-                        protein: meal.protein,
-                        carbs: meal.carbs,
-                        sugars: meal.sugars,
-                    };
-                    return acc;
-                }, {});
-
-                setMeals(groupedMeals);
-            } catch (error) {
-                console.error("Error fetching meals:", error);
+                    fetchMeals(currentUser.uid);
+                } catch (error) {
+                    console.error("Error fetching user document:", error);
+                }
+            } else {
+                setMeals([]);
+                setUserName(""); // Clear the name when logged out
             }
-        };
-
-        fetchMeals();
+        });
+        return unsubscribe;
     }, []);
 
-    
+    const fetchMeals = async (userId) => {
+        try {
+            const mealsCollection = collection(db, `users/${userId}/meals`);
+            const mealSnapshot = await getDocs(mealsCollection);
 
+            // Group meals by date
+            const groupedMeals = mealSnapshot.docs.reduce((acc, doc) => {
+                const meal = doc.data();
+                if (!acc[meal.date]) {
+                    acc[meal.date] = {
+                        breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                        dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
+                    };
+                }
+                if (meal.meal_type) {
+                    acc[meal.date][meal.meal_type] = {
+                        name: meal.name || "",
+                        protein: meal.protein || 0,
+                        carbs: meal.carbs || 0,
+                        sugars: meal.sugars || 0,
+                    };
+                }
+                return acc;
+            }, {});
+
+            setMeals(groupedMeals);
+        } catch (error) {
+            console.error("Error fetching meals:", error);
+        }
+    };
+
+    /**
+     * Toggles between 7-day and 5-day calendar views.
+     */
+    const toggleCalendarView = () => {
+        setIsSevenDayView((prev) => {
+            const newView = !prev;
+            setCurrentWeek(getCurrentWeek(new Date(currentWeek[0]), newView ? 7 : 5)); // Update the week based on the new view
+            return newView;
+        });
+    };
+
+    /**
+     * Handles editing a meal by opening the edit modal.
+     * @param {Object} meal - The meal data.
+     * @param {string} type - The meal type (e.g., breakfast, lunch, dinner).
+     * @param {string} dateKey - The date of the meal.
+     */
     const handleEditMeal = (meal, type, dateKey) => {
         setEditMeal({ ...meal[type], type, day: dateKey });
         setShowEditModal(true);
     };
 
+    /**
+     * Deletes a meal from Firestore and updates the local state.
+     * @param {string} dateKey - The date of the meal.
+     * @param {string} type - The meal type (e.g., breakfast, lunch, dinner).
+     */
     const deleteMeal = async (dateKey, type) => {
+        if (!user) return;
         const confirmDelete = window.confirm("Are you sure you want to delete this meal?");
         if (!confirmDelete) return;
-    
+
         try {
             const mealToDelete = meals[dateKey]?.[type];
             if (!mealToDelete || !mealToDelete.name) {
                 console.error("Meal to delete not found!");
                 return;
             }
-    
+
             const mealDocId = `${dateKey}_${mealToDelete.name.replace(/\s+/g, "")}`;
-            const mealDoc = doc(collection(db, 'meals'), mealDocId);
-    
-            console.log("Deleting meal:", mealToDelete); // Debugging
-    
-            // Delete the Firestore document
+            const mealDoc = doc(db, `users/${user.uid}/meals/${mealDocId}`);
+
             await deleteDoc(mealDoc);
-    
-            console.log("Meal deleted successfully!");
-    
+
             // Update the local meals state
             setMeals((prevMeals) => {
                 const updatedMeals = { ...prevMeals };
@@ -110,22 +170,21 @@ const Mealie = () => {
         }
     };
 
+    /**
+     * Adds a new meal to Firestore and updates the local state.
+     */
     const addMeal = async () => {
+        if (!user) {
+            alert("You must be signed in to add a meal.")
+        };
         setShowModal(false);
 
         try {
-            const mealsCollection = collection(db, 'meals');
+            const mealsCollection = collection(db, `users/${user.uid}/meals`);
             const mealDocId = `${newMeal.date}_${newMeal.type.replace(/\s+/g, "")}`; // Unique ID
             const mealDoc = doc(mealsCollection, mealDocId);
 
-            await setDoc(mealDoc, {
-                date: newMeal.date,
-                meal_type: newMeal.type,
-                name: newMeal.name,
-                protein: newMeal.protein,
-                carbs: newMeal.carbs,
-                sugars: newMeal.sugars,
-            });
+            await setDoc(mealDoc, {...newMeal, userId: user.uid});
 
             // Update local state
             setMeals((prevMeals) => {
@@ -137,18 +196,13 @@ const Mealie = () => {
                         dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
                     };
                 }
-                updatedMeals[newMeal.date][newMeal.type] = {
-                    name: newMeal.name,
-                    protein: newMeal.protein,
-                    carbs: newMeal.carbs,
-                    sugars: newMeal.sugars,
-                };
+                updatedMeals[newMeal.date][newMeal.type] = { ...newMeal };
                 return updatedMeals;
             });
 
             // Reset the newMeal state
             setNewMeal({
-                date: new Date().toISOString().split("T")[0], // Reset to today's date
+                date: new Date().toISOString().split("T")[0],
                 type: "breakfast",
                 name: "",
                 protein: 0,
@@ -160,107 +214,108 @@ const Mealie = () => {
         }
     };
 
+    /**
+     * Saves an edited meal to Firestore and updates the local state.
+     */
     const saveMeal = async () => {
+        if (!user) return;
         try {
-            const mealsCollection = collection(db, 'meals');
+            // const mealsCollection = collection(db, 'meals');
             const mealDocId = `${editMeal.day}_${editMeal.name.replace(/\s+/g, "")}`;
-            const mealDoc = doc(mealsCollection, mealDocId);
-            
-            console.log("Updating meal:", editMeal);
+            const mealDoc = doc(db, `users/${user.uid}/meals/${mealDocId}`);
 
-            await setDoc(mealDoc, {
-                day: editMeal.day,
-                meal_type: editMeal.type,
-                name: editMeal.name,
-                protein: editMeal.protein,
-                carbs: editMeal.carbs,
-                sugars: editMeal.sugars,
-            });
-    
-            console.log("Meal updated successfully!");
-            
+            await setDoc(mealDoc, {...editMeal, userId: user.uid});
+
             setMeals((prevMeals) => {
-                const updatedMeals = {...prevMeals };
-                if (updatedMeals[editMeal.day]){
-                    updatedMeals[editMeal.day][editMeal.type] = {
-                        name: editMeal.name,
-                        protein: editMeal.protein,
-                        carbs: editMeal.carbs,
-                        sugars: editMeal.sugars
-                    };
+                const updatedMeals = { ...prevMeals };
+                if (updatedMeals[editMeal.day]) {
+                    updatedMeals[editMeal.day][editMeal.type] = { ...editMeal };
                 }
                 return updatedMeals;
             });
 
-            setShowEditModal(false)
-
-            // Refetch meals to update the UI
-            // const mealsCollectionSnapshot = await getDocs(mealsCollection);
-            // const updatedMealList = mealsCollectionSnapshot.docs.map((doc) => doc.data());
-            // setMeals(updatedMealList);
-    
-            // setShowEditModal(false); // Close the edit modal
+            setShowEditModal(false);
         } catch (error) {
             console.error("Error updating meal:", error);
         }
     };
-
-    // const currentDay = new Date().toLocaleString("en-US", { weekday: "long" });
-    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]; // Days of the week
     const mealTypes = ["Breakfast", "Lunch", "Dinner"];
 
-    // Mealie UI
+    // Main UI
     return (
         <div className="main-container">
-            <NavBar setShowModal={setShowModal} />            
+            <NavBar setShowModal={setShowModal} />
+            {/* Welcome Message */}
+            <div className="welcome-message"> 
+                {userName && <h4>Welcome, {userName}!</h4>}
+            </div>
             {/* Add Meal Button */}
             <div className="add-meal">
-                <Button variant="primary" onClick={() => setShowModal(true)} > Add Meal </Button>
+                <Button variant="primary" onClick={() => setShowModal(true)}>Add Meal</Button>
             </div>
-            <div className="week-nav"> 
+
+            {/* Week Navigation */}
+            <div className="week-nav">
                 <Button
                     variant="secondary"
                     onClick={() => {
                         setAnimationDirection("next");
                         setTimeout(() => {
-                            setCurrentWeek(getCurrentWeek(new Date(currentWeek[0].setDate(currentWeek[0].getDate() - 7))));
-                            setAnimationDirection(""); // Reset animation direction
-                        }, 300); // Match the animation duration
+                            setCurrentWeek(
+                                getCurrentWeek(
+                                    new Date(currentWeek[0].getTime() - (isSevenDayView ? 7 : 5) * 24 * 60 * 60 * 1000),
+                                    isSevenDayView ? 7 : 5
+                                )
+                            );
+                            setAnimationDirection("");
+                        }, 300);
                     }}
                 >
                     Previous Week
                 </Button>
-                
-                <Button variant="secondary"
+
+                <Button
+                    className="week-nav-button"
+                    variant="secondary"
                     onClick={() => {
                         setAnimationDirection("prev");
                         setTimeout(() => {
-                            setCurrentWeek(getCurrentWeek(new Date(currentWeek[0].setDate(currentWeek[0].getDate() + 7))));
-                            setAnimationDirection(""); // Reset animation direction
-                        }, 300); // Match the animation duration
+                            setCurrentWeek(
+                                getCurrentWeek(
+                                    new Date(currentWeek[0].getTime() + (isSevenDayView ? 7 : 5) * 24 * 60 * 60 * 1000),
+                                    isSevenDayView ? 7 : 5
+                                )
+                            );
+                            setAnimationDirection("");
+                        }, 300);
                     }}
                 >
                     Next Week
                 </Button>
+
+                <Button variant="info" onClick={toggleCalendarView}>
+                    Toggle to {isSevenDayView ? "5-Day" : "7-Day"} View
+                </Button>
             </div>
+
             {/* Calendar Table */}
-            <div className="calendar-container">
-                <div className={`calendar-table ${animationDirection}`}>
-                    <table className="calender-table th">
-                        <thead>
-                            <tr>
-                                <th>Meal Type</th>
-                                {currentWeek.map((date) => (
-                                    <th key={date.toISOString()}>{date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {mealTypes.map((mealType) => (
-                                <tr key={mealType}>
-                                    <td className="meals">{mealType}</td>
-                                    {currentWeek.map((date) => {
-                                        const dateKey = date.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+            <div className={`calendar-container ${isSevenDayView ? "" : "five-day-view"}`}>
+                <div className="calendar-grid">
+                    {currentWeek
+                        .filter((date) => isSevenDayView || (date.getDay() !== 0 && date.getDay() !== 6)) // Exclude weekends in 5-day view
+                        .map((date) => (
+                            <div key={date.toISOString()} className="calendar-day">
+                                <div className="day-header">
+                                    {date.toLocaleDateString("en-US", {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                </div>
+                                <div className="day-body">
+                                    {mealTypes.map((mealType) => {
+                                        const dateKey = date.toISOString().split("T")[0];
                                         const mealData = meals[dateKey]?.[mealType.toLowerCase()] || {
                                             name: "",
                                             protein: 0,
@@ -269,43 +324,49 @@ const Mealie = () => {
                                         };
 
                                         return (
-                                            <td key={dateKey} className={`meal-cell ${mealData.name ? "has-meal" : "no-meal"}`}>
-                                                <strong>{mealData.name || "No meal"}</strong>
-                                                {mealData.name && (
-                                                    <>
-                                                        <div className="nutrition-data mt-2">
-                                                            <small>Protein: {mealData.protein}g</small>
-                                                            <br />
-                                                            <small>Carbs: {mealData.carbs}g</small>
-                                                            <br />
-                                                            <small>Sugars: {mealData.sugars}g</small>
-                                                        </div>
-                                                        <div className="mt-2">
-                                                            <button
-                                                                className="update"
-                                                                onClick={() => handleEditMeal(meals[dateKey], mealType.toLowerCase(), dateKey)}
-                                                            >
-                                                                Update
-                                                            </button>
-                                                            <button
-                                                                className="delete"
-                                                                onClick={() => deleteMeal(dateKey, mealType.toLowerCase())}
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </td>
+                                            <div key={mealType} className="meal-item">
+                                                <strong>{mealType}</strong>
+                                                <div className={`meal-cell ${mealData.name ? "has-meal" : "no-meal"}`}>
+                                                    {mealData.name || "No meal"}
+                                                    {mealData.name && (
+                                                        <>
+                                                            <div className="nutrition-data mt-2">
+                                                                <small>Protein: {mealData.protein}g</small>
+                                                                <br />
+                                                                <small>Carbs: {mealData.carbs}g</small>
+                                                                <br />
+                                                                <small>Sugars: {mealData.sugars}g</small>
+                                                            </div>
+                                                            <div className="button-group mt-2">
+                                                                <Button
+                                                                    variant="warning"
+                                                                    size="sm"
+                                                                    onClick={() => handleEditMeal(meals[dateKey], mealType.toLowerCase(), dateKey)}
+                                                                >
+                                                                    Update
+                                                                </Button>
+                                                                <Button
+                                                                    variant="danger"
+                                                                    size="sm"
+                                                                    className="ms-2"
+                                                                    onClick={() => deleteMeal(dateKey, mealType.toLowerCase())}
+                                                                >
+                                                                    Delete
+                                                                </Button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
                                         );
                                     })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                </div>
+                            </div>
+                        ))}
                 </div>
             </div>
 
+            {/* Add Meal Modal */}
             <AddMeal
                 showModal={showModal}
                 setShowModal={setShowModal}
@@ -313,6 +374,8 @@ const Mealie = () => {
                 setNewMeal={setNewMeal}
                 addMeal={addMeal}
             />
+
+            {/* Edit Meal Modal */}
             <EditMeal
                 showEditModal={showEditModal}
                 setShowEditModal={setShowEditModal}
@@ -320,99 +383,7 @@ const Mealie = () => {
                 setEditMeal={setEditMeal}
                 saveMeal={saveMeal}
             />
-        </div>
-    );
-};
-
-const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal }) => {
-    if (!showModal) return null;
-
-    return (
-        <div className="modal show d-block" tabIndex="-1">
-            <div className="modal-dialog">
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <h5 className="modal-title">Add Meal</h5>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={() => setShowModal(false)}
-                        ></button>
-                    </div>
-                    <div className="modal-body">
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                addMeal();
-                            }}
-                        >
-                            <div className="mb-3">
-                                <label className="form-label">Date</label>
-                                <input
-                                    type="date"
-                                    className="form-control"
-                                    value={newMeal.date}
-                                    onChange={(e) => setNewMeal({ ...newMeal, date: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Meal Type</label>
-                                <select
-                                    className="form-control"
-                                    value={newMeal.type}
-                                    onChange={(e) => setNewMeal({ ...newMeal, type: e.target.value })}
-                                    required
-                                >
-                                    <option value="breakfast">Breakfast</option>
-                                    <option value="lunch">Lunch</option>
-                                    <option value="dinner">Dinner</option>
-                                </select>
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Meal Name</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={newMeal.name}
-                                    onChange={(e) => setNewMeal({ ...newMeal, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Protein (g)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={newMeal.protein}
-                                    onChange={(e) => setNewMeal({ ...newMeal, protein: +e.target.value })}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Carbs (g)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={newMeal.carbs}
-                                    onChange={(e) => setNewMeal({ ...newMeal, carbs: +e.target.value })}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Sugars (g)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={newMeal.sugars}
-                                    onChange={(e) => setNewMeal({ ...newMeal, sugars: +e.target.value })}
-                                />
-                            </div>
-                            <button type="submit" className="btn btn-primary">
-                                Add Meal
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     );
 };

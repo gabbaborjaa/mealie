@@ -18,6 +18,7 @@
     position: relative;
     transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
     opacity: 1;
+    padding: 15px;
     /* table-layout: fixed; */
     /* width: 100%; */
 }
@@ -28,6 +29,15 @@
     border-collapse: collapse; /* Remove gaps between table cells */
 }
 
+.button-group{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 5px;
+    /* width: 75%; */
+}
 .calendar-table th,
 .calendar-table td {
     width: 120px;
@@ -174,6 +184,103 @@
     font-size: 0.85rem;
 }
 
+/* Calendar Day Card Styling */
+.calendar-day {
+    background-color: #f8f9fa; /* Light gray background */
+    border: 1px solid #dee2e6; /* Border for separation */
+    border-radius: 8px; /* Rounded corners */
+    padding: 5px; /* Padding inside the card */
+    text-align: center; /* Center align text */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    height: 100%; /* Ensure consistent height */
+    margin: 10px;
+    width: 10rem;
+    
+}
+
+.calendar-day .day-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #343a40; /* Dark text for headers */
+    white-space: nowrap; /* Prevent text from breaking into a new line */
+    overflow: hidden; /* Hide overflowing text */
+    /* text-overflow: ellipsis; Add ellipsis (...) for overflowing text */
+}
+
+.calendar-container.five-day-view .row {
+    justify-content: center; /* Center the calendar horizontally */
+    margin: 50px;
+}
+
+.calendar-day .day-body {
+    font-size: 0.9rem;
+    /* margin: ; */
+}
+
+
+
+.meal-item {
+    margin-bottom: 10px;
+}
+
+/* Ensure consistent height for meal cells */
+.meal-cell {
+    padding: 10px; /* Add consistent padding */
+    border-radius: 4px; /* Rounded corners */
+    min-height: 100px; /* Set a minimum height for all cells */
+    display: flex; /* Use flexbox for alignment */
+    flex-direction: column; /* Stack content vertically */
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+    text-align: center; /* Center text */
+}
+
+.meal-cell.has-meal {
+    background-color: #e9ecef; /* Light gray for cells with meals */
+}
+
+.meal-cell.no-meal {
+    background-color: #f8f9fa; /* Light gray for empty cells */
+    color: #6c757d; /* Muted text for empty meals */
+    font-style: italic; /* Italicize text for empty meals */
+}
+
+/* Default Calendar Grid (Desktop) */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* Default to 7 columns for 7-day view */
+    gap: 15px; /* Add spacing between cards */
+    padding: 20px;
+}
+
+.calendar-container.five-day-view .calendar-grid {
+    grid-template-columns: repeat(5, 1fr); /* Switch to 5 columns for 5-day view */
+}
+
+/* Responsive Design for Medium Screens (Tablets) */
+@media (max-width: 992px) {
+    .calendar-grid {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns for medium screens */
+        gap: 15px; /* Maintain spacing between cards */
+    }
+}
+
+/* Responsive Design for Small Screens (Mobile) */
+@media (max-width: 768px) {
+    .calendar-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for small screens */
+        gap: 15px; /* Maintain spacing between cards */
+    }
+}
+
+/* Responsive Design for Extra Small Screens */
+@media (max-width: 480px) {
+    .calendar-grid {
+        grid-template-columns: 1fr; /* Switch to 1 column for extra small screens */
+        gap: 15px; /* Maintain spacing between cards */
+    }
+}
+
 /* Responsive Design for Mobile */
 @media (max-width: 768px) {
     .calendar-table {
@@ -208,6 +315,35 @@
     .main-container {
         padding: 10px; /* Add padding for smaller screens */
     }
+
+    .calendar-container .row {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .calendar-container .col-7 {
+        flex: 0 0 50%; /* Each day takes up 50% of the width */
+        max-width: 50%;
+    }
+
+    .calendar-container .col-md-4 {
+        flex: 0 0 33.333%; /* Adjust for medium screens */
+        max-width: 33.333%;
+    }
+
+    .calendar-container .col-lg-2 {
+        flex: 0 0 16.666%; /* Adjust for large screens */
+        max-width: 16.666%;
+    }
+
+    .calendar-container .col-md-6 {
+        flex: 0 0 50%; /* Two days per row on medium screens */
+        max-width: 50%;
+    }
+
+    .calendar-day {
+        margin-bottom: 15px; /* Add spacing between cards */
+    }
 }
 
 /* Extra Small Screens */
@@ -233,5 +369,12 @@
     .delete {
         font-size: 0.65rem; /* Smaller buttons */
         padding: 4px 8px;
+    }
+}
+
+@media (min-width: 992px) {
+    .calendar-container .col-lg-1 {
+        flex: 0 0 14.2857%; /* 1/7th of the width for large screens */
+        max-width: 14.2857%;
     }
 }

@@ -1,7 +1,8 @@
 import React from "react";
 
-const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal, days }) => {
+const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal}) => {
     if (!showModal) return null;
+    console.log("Adding Meal:", addMeal);
 
     return (
         <div className="modal show d-block" tabIndex="-1">
@@ -22,23 +23,17 @@ const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal, days }
                                 addMeal();
                             }}
                         >
-                            <div className="mb-3">
-                                <label className="form-label">Day</label>
-                                <select
+                           <div className="mb-3">
+                                <label className="form-label">Date</label>
+                                <input
+                                    type="date"
                                     className="form-control"
-                                    value={newMeal.day}
+                                    value={newMeal.date}
                                     onChange={(e) =>
-                                        setNewMeal({ ...newMeal, day: e.target.value })
+                                        setNewMeal({ ...newMeal, date: e.target.value })
                                     }
                                     required
-                                >
-                                    <option value="">Select a day</option>
-                                    {days.map((day) => (
-                                        <option key={day} value={day}>
-                                            {day}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Meal Type</label>

@@ -3,6 +3,7 @@ import React from "react";
 const EditMeal = ({ showEditModal, setShowEditModal, editMeal, setEditMeal, saveMeal }) => {
     if (!showEditModal || !editMeal) return null;
     console.log("Editing Meal: ", editMeal);
+    
     return (
         <div className="modal show d-block" tabIndex="-1">
             <div className="modal-dialog">

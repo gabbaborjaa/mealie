@@ -1,3 +1,5 @@
+import { signInWithEmailAndPassword} from "firebase/auth";
+import { auth } from "../firebase-config";
 import { useState } from "react";
 import { Button, Modal, Form } from "react-bootstrap";
 import '../Mealie.css';
@@ -10,10 +12,18 @@ function LoginModal() {
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        console.log("Email: ", email);
-        console.log("Password: ", password);
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log("User logged in:", userCredential.user);
+            handleClose();
+        } catch (error){
+            console.error("Login error:", error.message);
+            alert("Login failed" + error.message);
+        }
+        // console.log("Email: ", email);
+        // console.log("Password: ", password);
 
         handleClose();
     };
@@ -50,13 +60,13 @@ function LoginModal() {
                                 required
                             />
                         </Form.Group>
-                        
+                        <Button variant="primary" type="submit" className="w-100 mt-3">
+                            Login
+                        </Button>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                <Button variant="primary" type="submit" className="w-100">
-                            Login
-                        </Button>
+                
                 </Modal.Footer>
             </Modal>
         </>
