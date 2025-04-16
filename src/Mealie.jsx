@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Button } from "react-bootstrap";
+import { Button} from "react-bootstrap";
 import NavBar from "./Components/Navbar";
 import EditMeal from "./Components/EditMeal";
 import AddMeal from "./Components/AddMeal";
 import './Mealie.css';
+import './styles/font.css';
 import { collection, doc, getDocs, deleteDoc, setDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "./firebase-config";
 import { onAuthStateChanged } from "firebase/auth";
@@ -16,24 +17,23 @@ import { onAuthStateChanged } from "firebase/auth";
  * @param {number} days - Number of days in the week (7 or 5).
  * @returns {Array<Date>} - Array of dates for the week.
  */
-const getCurrentWeek = (date = new Date(), days = 7) => {
-    const startOfWeek = new Date(date);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + (days === 5 ? 1 : 0)); // Start on Monday for 5-day view
-    return Array.from({ length: days }, (_, i) => {
+const getCurrentWeek = (date = new Date()) => {
+    const startOfWeek = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay()));
+    // startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Always start on Sunday
+    return Array.from({ length: 7 }, (_, i) => {
         const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
+        day.setUTCDate(startOfWeek.getUTCDate() + i);
         return day;
     });
 };
 
 const Mealie = () => {
     // State variables
-    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]; // Days of the week
     const [meals, setMeals] = useState([]); // Stores all meals grouped by date
     const [showEditModal, setShowEditModal] = useState(false); // Controls the edit modal visibility
     const [editMeal, setEditMeal] = useState(null); // Tracks the meal being edited
     const [currentWeek, setCurrentWeek] = useState(getCurrentWeek()); // Tracks the current week being displayed
-    const [isSevenDayView, setIsSevenDayView] = useState(true); // Toggles between 7-day and 5-day views
+    // const [isSevenDayView, setIsSevenDayView] = useState(true); // Toggles between 7-day and 5-day views
     const [newMeal, setNewMeal] = useState({
         date: new Date().toISOString().split("T")[0], // Default to today's date
         type: "breakfast", // Default meal type
@@ -46,7 +46,8 @@ const Mealie = () => {
     const [animationDirection, setAnimationDirection] = useState(""); // Tracks animation direction for week navigation
     const [user, setUser] = useState(null);
     const [userName, setUserName] = useState(null);
-
+    const [loading, setLoading] = useState(true);
+    
     /**
      * Fetch meals from Firestore and group them by date.
      */
@@ -59,40 +60,50 @@ const Mealie = () => {
                     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
-                        console.log("User data fetched:", userData); // Debugging
+                        console.log("User data fetched successfully:", userData);
                         setUserName(userData.name); // Set the user's name
                     } else {
                         console.error("User document does not exist in Firestore.");
                     }
-                    fetchMeals(currentUser.uid);
+                    await fetchMeals(currentUser.uid); // Fetch meals after authentication
                 } catch (error) {
                     console.error("Error fetching user document:", error);
                 }
             } else {
                 setMeals([]);
-                setUserName(""); // Clear the name when logged out
+                setUserName(null); // Clear the name when logged out
             }
+            setTimeout(() => {
+                setLoading(false); // Set loading to false after authentication is resolved
+            }, 1000)
+            
         });
         return unsubscribe;
     }, []);
-
+    
     const fetchMeals = async (userId) => {
         try {
             const mealsCollection = collection(db, `users/${userId}/meals`);
             const mealSnapshot = await getDocs(mealsCollection);
 
+            // Debugging: Log fetched meal documents
+            console.log("Fetched meals:", mealSnapshot.docs.map((doc) => doc.data()));
+
             // Group meals by date
             const groupedMeals = mealSnapshot.docs.reduce((acc, doc) => {
                 const meal = doc.data();
-                if (!acc[meal.date]) {
-                    acc[meal.date] = {
+                const mealType = meal.type?.toLowerCase();
+                const mealDate = meal.date;
+
+                if (!acc[mealDate]) {
+                    acc[mealDate] = {
                         breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
                         lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
                         dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
                     };
                 }
-                if (meal.meal_type) {
-                    acc[meal.date][meal.meal_type] = {
+                if (mealType && acc[mealDate][mealType]) {
+                    acc[mealDate][mealType] = {
                         name: meal.name || "",
                         protein: meal.protein || 0,
                         carbs: meal.carbs || 0,
@@ -102,22 +113,34 @@ const Mealie = () => {
                 return acc;
             }, {});
 
+            // Debugging: Log grouped meals
+            console.log("Grouped meals:", groupedMeals);
+
             setMeals(groupedMeals);
         } catch (error) {
             console.error("Error fetching meals:", error);
         }
     };
+    if (loading) {
+        return (
+            <div className="loading-overlay">
+                <div className="loading-message">
+                    <h1>Loading...</h1>
+                </div>
+            </div>
+        );
+    }
 
     /**
      * Toggles between 7-day and 5-day calendar views.
      */
-    const toggleCalendarView = () => {
-        setIsSevenDayView((prev) => {
-            const newView = !prev;
-            setCurrentWeek(getCurrentWeek(new Date(currentWeek[0]), newView ? 7 : 5)); // Update the week based on the new view
-            return newView;
-        });
-    };
+    // const toggleCalendarView = () => {
+    //     setIsSevenDayView((prev) => {
+    //         const newView = !prev;
+    //         setCurrentWeek(getCurrentWeek(new Date(currentWeek[0]), newView ? 7 : 5)); // Update the week based on the new view
+    //         return newView;
+    //     });
+    // };
 
     /**
      * Handles editing a meal by opening the edit modal.
@@ -147,7 +170,7 @@ const Mealie = () => {
                 return;
             }
 
-            const mealDocId = `${dateKey}_${mealToDelete.name.replace(/\s+/g, "")}`;
+            const mealDocId = `${dateKey}_${type}`;
             const mealDoc = doc(db, `users/${user.uid}/meals/${mealDocId}`);
 
             await deleteDoc(mealDoc);
@@ -165,6 +188,7 @@ const Mealie = () => {
                 }
                 return updatedMeals;
             });
+            console.log(`Meal deleted sucessfully: ${mealDocId}`)
         } catch (error) {
             console.error("Error deleting meal:", error);
         }
@@ -184,19 +208,25 @@ const Mealie = () => {
             const mealDocId = `${newMeal.date}_${newMeal.type.replace(/\s+/g, "")}`; // Unique ID
             const mealDoc = doc(mealsCollection, mealDocId);
 
-            await setDoc(mealDoc, {...newMeal, userId: user.uid});
+            const mealToAdd = {
+                ...newMeal,
+                date: newMeal.date,
+                userId: user.uid,
+            };
+            
+            await setDoc(mealDoc, mealToAdd);
 
             // Update local state
             setMeals((prevMeals) => {
                 const updatedMeals = { ...prevMeals };
-                if (!updatedMeals[newMeal.date]) {
-                    updatedMeals[newMeal.date] = {
+                if (!updatedMeals[mealToAdd.date]) {
+                    updatedMeals[mealToAdd.date] = {
                         breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
                         lunch: { name: "", protein: 0, carbs: 0, sugars: 0 },
                         dinner: { name: "", protein: 0, carbs: 0, sugars: 0 },
                     };
                 }
-                updatedMeals[newMeal.date][newMeal.type] = { ...newMeal };
+                updatedMeals[mealToAdd.date][mealToAdd.type] = { ...newMeal };
                 return updatedMeals;
             });
 
@@ -245,11 +275,9 @@ const Mealie = () => {
     // Main UI
     return (
         <div className="main-container">
-            <NavBar setShowModal={setShowModal} />
-            {/* Welcome Message */}
-            <div className="welcome-message"> 
-                {userName && <h4>Welcome, {userName}!</h4>}
-            </div>
+            {/* <NavBar setShowModal={setShowModal} />
+            <NavBar userName={userName} /> */}
+            <NavBar userName={userName} setShowModal={setShowModal} />
             {/* Add Meal Button */}
             <div className="add-meal">
                 <Button variant="primary" onClick={() => setShowModal(true)}>Add Meal</Button>
@@ -260,14 +288,14 @@ const Mealie = () => {
                 <Button
                     variant="secondary"
                     onClick={() => {
-                        setAnimationDirection("next");
+                        setAnimationDirection("prev");
                         setTimeout(() => {
-                            setCurrentWeek(
-                                getCurrentWeek(
-                                    new Date(currentWeek[0].getTime() - (isSevenDayView ? 7 : 5) * 24 * 60 * 60 * 1000),
-                                    isSevenDayView ? 7 : 5
-                                )
-                            );
+                            setCurrentWeek((prevWeek) => {
+                                const previousWeekStart = new Date(prevWeek[0]); // Get the first day of the current week
+                                // const newStartDate = new Date(previousWeekStart); // Create a new Date object
+                                previousWeekStart.setUTCDate(previousWeekStart.getUTCDate()); // Move back 7 days
+                                return getCurrentWeek(previousWeekStart); // Update the week
+                            });
                             setAnimationDirection("");
                         }, 300);
                     }}
@@ -279,35 +307,33 @@ const Mealie = () => {
                     className="week-nav-button"
                     variant="secondary"
                     onClick={() => {
-                        setAnimationDirection("prev");
+                        setAnimationDirection("next");
                         setTimeout(() => {
-                            setCurrentWeek(
-                                getCurrentWeek(
-                                    new Date(currentWeek[0].getTime() + (isSevenDayView ? 7 : 5) * 24 * 60 * 60 * 1000),
-                                    isSevenDayView ? 7 : 5
-                                )
-                            );
+                            setCurrentWeek((prevWeek) => {
+                                const nextWeekStart = new Date(prevWeek[0]); // Get the first day of the current week
+                                // const newStartDate = new Date(nextWeekStart); // Create a new Date object
+                                nextWeekStart.setUTCDate(nextWeekStart.getUTCDate() + 14); // Move forward 7 days
+                                return getCurrentWeek(nextWeekStart); // Update the week
+                            });
                             setAnimationDirection("");
                         }, 300);
                     }}
                 >
                     Next Week
                 </Button>
-
-                <Button variant="info" onClick={toggleCalendarView}>
-                    Toggle to {isSevenDayView ? "5-Day" : "7-Day"} View
-                </Button>
             </div>
 
             {/* Calendar Table */}
-            <div className={`calendar-container ${isSevenDayView ? "" : "five-day-view"}`}>
+            <div className={`calendar-container ${animationDirection}`}>
                 <div className="calendar-grid">
-                    {currentWeek
-                        .filter((date) => isSevenDayView || (date.getDay() !== 0 && date.getDay() !== 6)) // Exclude weekends in 5-day view
-                        .map((date) => (
-                            <div key={date.toISOString()} className="calendar-day">
+                    {currentWeek.map((date) => {
+                        const dateKey = date.toISOString().split("T")[0];
+                        const dayMeals = meals[dateKey] || {}; // Get meals for the current date
+
+                        return (
+                            <div key={dateKey} className="calendar-day">
                                 <div className="day-header">
-                                    {date.toLocaleDateString("en-US", {
+                                {new Date(date.toISOString().split("T")[0]).toLocaleDateString("en-US", {
                                         weekday: "short",
                                         month: "short",
                                         day: "numeric",
@@ -315,8 +341,7 @@ const Mealie = () => {
                                 </div>
                                 <div className="day-body">
                                     {mealTypes.map((mealType) => {
-                                        const dateKey = date.toISOString().split("T")[0];
-                                        const mealData = meals[dateKey]?.[mealType.toLowerCase()] || {
+                                        const mealData = dayMeals[mealType.toLowerCase()] || {
                                             name: "",
                                             protein: 0,
                                             carbs: 0,
@@ -362,9 +387,11 @@ const Mealie = () => {
                                     })}
                                 </div>
                             </div>
-                        ))}
+                        );
+                    })}
                 </div>
             </div>
+            {console.log("Current week dates:", currentWeek.map((date) => date.toISOString().split("T")[0]))}
 
             {/* Add Meal Modal */}
             <AddMeal
