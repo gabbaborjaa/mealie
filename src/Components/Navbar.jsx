@@ -1,25 +1,16 @@
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase-config';
+// import { useState, useEffect } from 'react';
+// import { onAuthStateChanged } from 'firebase/auth';
+// import { auth } from '../firebase-config';
+import { Button } from 'react-bootstrap';
 import SignUpModal from './SignupModal';
 import LoginModal from './LoginModal';
 import LogoutButton from './Logout';
 import '../Mealie.css';
 
-function NavBar({ setShowModal }) {
-  const [user, setUser] = useState(null);
-
-  // Monitor authentication state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return unsubscribe;
-  }, []);
-
+function NavBar({ userName }) {
   return (
     <Navbar expand="lg" className="Navbar">
       <Container>
@@ -28,15 +19,19 @@ function NavBar({ setShowModal }) {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto"></Nav>
           <div className="navbar-buttons">
-            {user ? (
-              // Show Logout button when user is signed in
-              <LogoutButton />
+            {userName ? (
+              <div className="nav-button-container">
+                {/* Styled username button */}
+                <Button variant="outline-primary" className="username-button">
+                  Hello, {userName}!
+                </Button>
+                <LogoutButton />
+              </div>
             ) : (
-              // Show Login and Sign Up buttons when no user is signed in
-              <>
+              <div className="nav-button-container">
                 <LoginModal />
                 <SignUpModal />
-              </>
+              </div>
             )}
           </div>
         </Navbar.Collapse>
