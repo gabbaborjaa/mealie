@@ -18,13 +18,16 @@ import { onAuthStateChanged } from "firebase/auth";
  * @returns {Array<Date>} - Array of dates for the week.
  */
 const getCurrentWeek = (date = new Date()) => {
-    const startOfWeek = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay()));
-    // startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Always start on Sunday
+    const startOfWeek = new Date(date);
+    const currentWeek = startOfWeek.getDay()
+    startOfWeek.setDate(startOfWeek.getDate() - currentWeek); // Always start on Sunday
     return Array.from({ length: 7 }, (_, i) => {
         const day = new Date(startOfWeek);
-        day.setUTCDate(startOfWeek.getUTCDate() + i);
-        return day;
+        // day.setUTCDate(startOfWeek.getUTCDate() + i);
+        day.setDate(startOfWeek.getDate() + i);
+        return day.toISOString().split("T")[0];
     });
+    
 };
 
 const Mealie = () => {
@@ -112,6 +115,8 @@ const Mealie = () => {
                 }
                 return acc;
             }, {});
+            
+            // console.log("Current week dates:", currentWeek.map((date) => date.toISOString().split("T")[0]));
 
             // Debugging: Log grouped meals
             console.log("Grouped meals:", groupedMeals);
@@ -205,7 +210,7 @@ const Mealie = () => {
 
         try {
             const mealsCollection = collection(db, `users/${user.uid}/meals`);
-            const mealDocId = `${newMeal.date}_${newMeal.type.replace(/\s+/g, "")}`; // Unique ID
+            const mealDocId = `${newMeal.date}_${newMeal.type.toLowerCase()}`; // Unique ID
             const mealDoc = doc(mealsCollection, mealDocId);
 
             const mealToAdd = {
@@ -293,7 +298,7 @@ const Mealie = () => {
                             setCurrentWeek((prevWeek) => {
                                 const previousWeekStart = new Date(prevWeek[0]); // Get the first day of the current week
                                 // const newStartDate = new Date(previousWeekStart); // Create a new Date object
-                                previousWeekStart.setUTCDate(previousWeekStart.getUTCDate()); // Move back 7 days
+                                previousWeekStart.setDate(previousWeekStart.getDate() - 7); // Move back 7 days
                                 return getCurrentWeek(previousWeekStart); // Update the week
                             });
                             setAnimationDirection("");
@@ -312,7 +317,7 @@ const Mealie = () => {
                             setCurrentWeek((prevWeek) => {
                                 const nextWeekStart = new Date(prevWeek[0]); // Get the first day of the current week
                                 // const newStartDate = new Date(nextWeekStart); // Create a new Date object
-                                nextWeekStart.setUTCDate(nextWeekStart.getUTCDate() + 14); // Move forward 7 days
+                                nextWeekStart.setDate(nextWeekStart.getDate() + 7); // Move forward 7 days
                                 return getCurrentWeek(nextWeekStart); // Update the week
                             });
                             setAnimationDirection("");
@@ -326,14 +331,14 @@ const Mealie = () => {
             {/* Calendar Table */}
             <div className={`calendar-container ${animationDirection}`}>
                 <div className="calendar-grid">
-                    {currentWeek.map((date) => {
-                        const dateKey = date.toISOString().split("T")[0];
+                    {currentWeek.map((dateKey) => {
                         const dayMeals = meals[dateKey] || {}; // Get meals for the current date
+                        console.log("Rendering dateKey:", dateKey, "dayMeals:", dayMeals);
 
                         return (
                             <div key={dateKey} className="calendar-day">
                                 <div className="day-header">
-                                {new Date(date.toISOString().split("T")[0]).toLocaleDateString("en-US", {
+                                {new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-US", {
                                         weekday: "short",
                                         month: "short",
                                         day: "numeric",
@@ -362,7 +367,7 @@ const Mealie = () => {
                                                                 <br />
                                                                 <small>Sugars: {mealData.sugars}g</small>
                                                             </div>
-                                                            <div className="button-group mt-2">
+                                                            <div className="meal-button-group">
                                                                 <Button
                                                                     variant="warning"
                                                                     size="sm"
@@ -391,7 +396,7 @@ const Mealie = () => {
                     })}
                 </div>
             </div>
-            {console.log("Current week dates:", currentWeek.map((date) => date.toISOString().split("T")[0]))}
+            {/* {console.log("Current week dates:", currentWeek.map((date) => date.toISOString().split("T")[0]))} */}
 
             {/* Add Meal Modal */}
             <AddMeal

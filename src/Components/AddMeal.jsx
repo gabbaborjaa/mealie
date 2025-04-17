@@ -2,7 +2,7 @@ import React from "react";
 
 const AddMeal = ({ showModal, setShowModal, newMeal, setNewMeal, addMeal}) => {
     if (!showModal) return null;
-    console.log("Adding Meal:", addMeal);
+    // console.log("Adding Meal:", addMeal);
 
     return (
         <div className="modal show d-block" tabIndex="-1">
