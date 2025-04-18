@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/mealie/static/css/main.4aa7cc9d.css",
+    "main.js": "/mealie/static/js/main.d8f9306e.js",
+    "static/js/453.45003557.chunk.js": "/mealie/static/js/453.45003557.chunk.js",
+    "index.html": "/mealie/index.html",
+    "main.4aa7cc9d.css.map": "/mealie/static/css/main.4aa7cc9d.css.map",
+    "main.d8f9306e.js.map": "/mealie/static/js/main.d8f9306e.js.map",
+    "453.45003557.chunk.js.map": "/mealie/static/js/453.45003557.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.4aa7cc9d.css",
+    "static/js/main.d8f9306e.js"
+  ]
+}
