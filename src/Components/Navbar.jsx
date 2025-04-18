@@ -10,7 +10,7 @@ function NavBar({ userName }) {
   return (
     <Navbar expand="lg" className="Navbar">
       <Container>
-        <Navbar.Brand href="#home" className="mx-auto">Mealie</Navbar.Brand>
+        <Navbar.Brand className="mx-auto">Mealie</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto"></Nav>

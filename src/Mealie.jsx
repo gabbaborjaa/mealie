@@ -3,6 +3,7 @@ import { Button} from "react-bootstrap";
 import NavBar from "./Components/Navbar";
 import EditMeal from "./Components/EditMeal";
 import AddMeal from "./Components/AddMeal";
+import SearchPage from "./Components/SearchPage";
 import './Mealie.css';
 import './styles/font.css';
 import { collection, doc, getDocs, deleteDoc, setDoc, getDoc } from "firebase/firestore";
@@ -11,16 +12,15 @@ import { onAuthStateChanged } from "firebase/auth";
 
 
 /**
- * Utility function to get the current week based on the number of days (7 or 5).
- * For a 5-day view, the week starts on Monday.
+ * Utility function to get the current week based on the number of days
  * @param {Date} date - The starting date.
- * @param {number} days - Number of days in the week (7 or 5).
+ * @param {number} days - Number of days in the week
  * @returns {Array<Date>} - Array of dates for the week.
  */
 const getCurrentWeek = (date = new Date()) => {
     const startOfWeek = new Date(date);
     const currentWeek = startOfWeek.getDay()
-    startOfWeek.setDate(startOfWeek.getDate() - currentWeek); // Always start on Sunday
+    startOfWeek.setDate(startOfWeek.getDate() - currentWeek);
     return Array.from({ length: 7 }, (_, i) => {
         const day = new Date(startOfWeek);
         // day.setUTCDate(startOfWeek.getUTCDate() + i);
@@ -90,7 +90,7 @@ const Mealie = () => {
             const mealSnapshot = await getDocs(mealsCollection);
 
             // Debugging: Log fetched meal documents
-            console.log("Fetched meals:", mealSnapshot.docs.map((doc) => doc.data()));
+            // console.log("Fetched meals:", mealSnapshot.docs.map((doc) => doc.data()));
 
             // Group meals by date
             const groupedMeals = mealSnapshot.docs.reduce((acc, doc) => {
@@ -119,7 +119,7 @@ const Mealie = () => {
             // console.log("Current week dates:", currentWeek.map((date) => date.toISOString().split("T")[0]));
 
             // Debugging: Log grouped meals
-            console.log("Grouped meals:", groupedMeals);
+            // console.log("Grouped meals:", groupedMeals);
 
             setMeals(groupedMeals);
         } catch (error) {
@@ -135,17 +135,6 @@ const Mealie = () => {
             </div>
         );
     }
-
-    /**
-     * Toggles between 7-day and 5-day calendar views.
-     */
-    // const toggleCalendarView = () => {
-    //     setIsSevenDayView((prev) => {
-    //         const newView = !prev;
-    //         setCurrentWeek(getCurrentWeek(new Date(currentWeek[0]), newView ? 7 : 5)); // Update the week based on the new view
-    //         return newView;
-    //     });
-    // };
 
     /**
      * Handles editing a meal by opening the edit modal.
@@ -181,8 +170,8 @@ const Mealie = () => {
             await deleteDoc(mealDoc);
 
             // Update the local meals state
-            setMeals((prevMeals) => {
-                const updatedMeals = { ...prevMeals };
+            setMeals((currentMeals) => {
+                const updatedMeals = { ...currentMeals };
                 if (updatedMeals[dateKey]) {
                     updatedMeals[dateKey][type] = {
                         name: "",
@@ -222,8 +211,8 @@ const Mealie = () => {
             await setDoc(mealDoc, mealToAdd);
 
             // Update local state
-            setMeals((prevMeals) => {
-                const updatedMeals = { ...prevMeals };
+            setMeals((currentMeals) => {
+                const updatedMeals = { ...currentMeals };
                 if (!updatedMeals[mealToAdd.date]) {
                     updatedMeals[mealToAdd.date] = {
                         breakfast: { name: "", protein: 0, carbs: 0, sugars: 0 },
@@ -261,8 +250,8 @@ const Mealie = () => {
 
             await setDoc(mealDoc, {...editMeal, userId: user.uid});
 
-            setMeals((prevMeals) => {
-                const updatedMeals = { ...prevMeals };
+            setMeals((currentMeals) => {
+                const updatedMeals = { ...currentMeals };
                 if (updatedMeals[editMeal.day]) {
                     updatedMeals[editMeal.day][editMeal.type] = { ...editMeal };
                 }
@@ -274,14 +263,11 @@ const Mealie = () => {
             console.error("Error updating meal:", error);
         }
     };
-    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]; // Days of the week
-    const mealTypes = ["Breakfast", "Lunch", "Dinner"];
+    const mealTypes = ["Breakfast", "Lunch", "Dinner"]; // Meal types array
 
     // Main UI
     return (
         <div className="main-container">
-            {/* <NavBar setShowModal={setShowModal} />
-            <NavBar userName={userName} /> */}
             <NavBar userName={userName} setShowModal={setShowModal} />
             {/* Add Meal Button */}
             <div className="add-meal">
@@ -333,7 +319,7 @@ const Mealie = () => {
                 <div className="calendar-grid">
                     {currentWeek.map((dateKey) => {
                         const dayMeals = meals[dateKey] || {}; // Get meals for the current date
-                        console.log("Rendering dateKey:", dateKey, "dayMeals:", dayMeals);
+                        // console.log("Rendering dateKey:", dateKey, "dayMeals:", dayMeals);
 
                         return (
                             <div key={dateKey} className="calendar-day">
@@ -360,7 +346,7 @@ const Mealie = () => {
                                                     {mealData.name || "No meal"}
                                                     {mealData.name && (
                                                         <>
-                                                            <div className="nutrition-data mt-2">
+                                                            <div>
                                                                 <small>Protein: {mealData.protein}g</small>
                                                                 <br />
                                                                 <small>Carbs: {mealData.carbs}g</small>
@@ -371,6 +357,7 @@ const Mealie = () => {
                                                                 <Button
                                                                     variant="warning"
                                                                     size="sm"
+                                                                    className="update"
                                                                     onClick={() => handleEditMeal(meals[dateKey], mealType.toLowerCase(), dateKey)}
                                                                 >
                                                                     Update
@@ -378,7 +365,7 @@ const Mealie = () => {
                                                                 <Button
                                                                     variant="danger"
                                                                     size="sm"
-                                                                    className="ms-2"
+                                                                    className="delete"
                                                                     onClick={() => deleteMeal(dateKey, mealType.toLowerCase())}
                                                                 >
                                                                     Delete
@@ -397,6 +384,8 @@ const Mealie = () => {
                 </div>
             </div>
             {/* {console.log("Current week dates:", currentWeek.map((date) => date.toISOString().split("T")[0]))} */}
+            
+            <SearchPage />
 
             {/* Add Meal Modal */}
             <AddMeal

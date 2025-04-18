@@ -6,6 +6,8 @@
     font-family: 'Noto Serif', serif;
 }
 
+
+
 /* Calendar Table Styling */
 .calendar-table {
     background-color: #f8f9fa; /* Light gray background */
@@ -35,7 +37,7 @@
     width: 100%; /* Ensure the container spans the full width of the screen */
     /* max-width: 1200px; Optional: Limit the maximum width */
     margin: 0 auto; /* Center the container */
-    margin-bottom: 5rem;
+    /* margin-bottom: 2rem; */
     padding: 10px; /* Add some padding */
     box-sizing: border-box; /* Include padding in the width calculation */
     position: relative;
@@ -70,13 +72,23 @@
 }
 .meal-button-group{
     margin-top: 2px;
+    gap: 10px;
 }
+
+.search-page {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    margin: 1.5rem;
+}
+
 .button-group{
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 15px;
     margin: 5px;
     /* width: 75%; */
 }
@@ -102,6 +114,17 @@
     justify-content: center;
     align-items: center;
     z-index: 9999; /* Ensure it appears above all other content */
+}
+/* Style the food card */
+.food-card{
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px;
+    margin: 15px;
+    margin-top: 5rem;
+    box-sizing: border-box;
+    width: 85%; /* (311 x 2) */
+    height: auto
 }
 
 /* Loading message */
@@ -214,7 +237,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 1rem;
+    margin: 0.5rem;
 }
 
 /* Button Styling */
@@ -271,9 +294,10 @@
 }
 
 /* Nutrition Data Styling */
-.nutrition-data {
+/* .nutrition-data {
+    margin-top: 2px;
     font-size: 0.85rem;
-}
+} */
 
 /* Calendar Day Card Styling */
 .calendar-day {
@@ -329,6 +353,12 @@
     text-align: center; /* Center text */
 }
 
+
+.search-form {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
 .meal-cell.has-meal {
     background-color: #e9ecef; /* Light gray for cells with meals */
 }
@@ -356,6 +386,7 @@
     .calendar-grid{
         grid-template-columns: repeat(3, 0.5fr);
         gap: 10px;
+        justify-content: center;
     }
 }
 
@@ -364,6 +395,7 @@
     .calendar-grid {
         grid-template-columns: repeat(3, 1fr); /* 4 columns for medium screens */
         gap: 15px; /* Maintain spacing between cards */
+        justify-content: center;
     }
 }
 
@@ -372,6 +404,20 @@
     .calendar-grid {
         grid-template-columns: repeat(2, 1fr); /* 2 columns for small screens */
         gap: 15px; /* Maintain spacing between cards */
+        justify-content: center;
+    }
+
+
+    .navbar-collapse {
+        display: flex; 
+        
+        /* flex-direction: column; Stack items vertically */
+        align-items: center; /* Center items horizontally */
+        justify-content: center; /* Center items vertically */
+    }
+
+    .navbar-buttons {
+        margin-top: 10px; /* Add spacing between buttons */
     }
 }
 
@@ -380,6 +426,7 @@
     .calendar-grid {
         grid-template-columns: 1fr; /* Switch to 1 column for extra small screens */
         gap: 15px; /* Maintain spacing between cards */
+        justify-content: center;
     }
 }
 
@@ -387,6 +434,8 @@
 @media (max-width: 768px) {
     .calendar-table {
         font-size: 0.8rem; /* Reduce font size for smaller screens */
+        justify-content: center;
+        
     }
 
     .calendar-table th,
