@@ -1,16 +1,10 @@
 import React, { useState } from "react";
-import { Button, Form, Card, Row, Col, Modal } from "react-bootstrap";
+import { Button, Form, Card, Row, Col } from "react-bootstrap";
 import '../Mealie.css'
-const SearchPage = ({addMeal }) => {
+const SearchPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [selectRecipe, setSelectedRecipe] = useState(null);
-    const [mealDetails, setMealDetails] = useState({
-        day: "",
-        type: "breakfast",
-    });
 
     const fetchRecipes = async () => {
         const url = `https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/complexSearch?query=${searchQuery}&number=10`;
@@ -29,8 +23,15 @@ const SearchPage = ({addMeal }) => {
             const detailedRecipes = await Promise.all(
                 data.results.map(async (recipe) => {
                     const nutritionUrl = `https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/${recipe.id}/nutritionWidget.json`;
+                    const recipeUrl = `https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/${recipe.id}/information`;
+                    const recipeResponse = await fetch(recipeUrl, options);
+                    const recipeData = await recipeResponse.json();
+                    // const recipeLink = recipeData.sourceUrl;
+                    // console.log("Recipe Data", recipeData)
+                    // console.log("Recipe Link", recipeLink)
                     const nutritionResponse = await fetch(nutritionUrl, options);
                     const nutritionData = await nutritionResponse.json();
+                    // console.log("Nutrition ID", nutritionData)
                     return {
                         ...recipe,
                         nutrition: {
@@ -38,7 +39,9 @@ const SearchPage = ({addMeal }) => {
                             carbs: nutritionData.carbs,
                             protein: nutritionData.protein,
                             sugar: nutritionData.bad?.find((item) => item.title === "Sugar")?.amount || "N/A",
+                            link: recipeData.sourceUrl,
                         },
+
                     };
                 })
             );
@@ -50,34 +53,9 @@ const SearchPage = ({addMeal }) => {
         }
     };
 
-    const handleAddMeal = (recipe) => {
-        setSelectedRecipe(recipe);
-        setShowModal(true);
-    };
-
-    const handleModalSubmit = () => {
-        if (!mealDetails.day || !mealDetails.type){
-            alert("Please select a day and meal type");
-            return;
-        }
-
-        const mealToAdd ={
-            ...selectRecipe,
-            day: new Date(mealDetails.day).toISOString().split("T")[0],
-            type: mealDetails.type,
-        };
-
-        console.log("Submitting meal to addMeal:", mealToAdd);
-
-        addMeal(mealToAdd);
-
-        setShowModal(false);
-        setMealDetails({ day: "", type: "breakfast"});
-    };
-
     return (
         <div className="search-page">
-            <h1>Search Recipes</h1>
+            <h1>Search Meals</h1>
             <Form
                 onSubmit={(e) => {
                     e.preventDefault();
@@ -87,7 +65,7 @@ const SearchPage = ({addMeal }) => {
                 <Form.Group controlId="searchQuery" className="search-form">
                     <Form.Control
                         type="text"
-                        placeholder="Enter a recipe name..."
+                        placeholder="Enter a meal..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="me-2"
@@ -113,51 +91,15 @@ const SearchPage = ({addMeal }) => {
                                     <strong>Protein:</strong> {recipe.nutrition.protein} <br />
                                     <strong>Sugar:</strong> {recipe.nutrition.sugar}
                                 </Card.Text>
-                                <Button variant="success" onClick={() => handleAddMeal(recipe)}>
-                                    Add Meal
-                                </Button>
+                                <Button 
+                                variant="success" 
+                                onClick={() => window.open(recipe.nutrition.link)}
+                                >Recipe</Button> 
                             </Card.Body>
                         </Card>
                     </Col>
                 ))}
             </Row>
-            <Modal show={showModal} onHide={() => setShowModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Add Meal</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group controlId="mealDay">
-                            <Form.Label>Day</Form.Label>
-                            <Form.Control
-                                type="date"
-                                value={mealDetails.day}
-                                onChange={(e) => setMealDetails({ ...mealDetails, day: e.target.value })}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="mealType" className="mt-3">
-                            <Form.Label>Meal Type</Form.Label>
-                            <Form.Select
-                                value={mealDetails.type}
-                                onChange={(e) => setMealDetails({ ...mealDetails, type: e.target.value })}
-                            >
-                                <option value="breakfast">Breakfast</option>
-                                <option value="lunch">Lunch</option>
-                                <option value="dinner">Dinner</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>
-                        Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleModalSubmit}>
-                        Add Meal
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
         </div>
     );
 };
